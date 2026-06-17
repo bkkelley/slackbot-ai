@@ -11,6 +11,7 @@ import { RateLimiter } from './rate-limiter';
 import { ModelManager } from './model-manager';
 import { normalizeToolUse } from './tool-normalizer';
 import { ProjectCommand } from './commands/project';
+import { OnboardCommand } from './commands/onboard';
 import { McpCommand } from './commands/mcp';
 import { JobsCommand } from './commands/jobs';
 import { AgentsCommand } from './commands/agents';
@@ -38,6 +39,7 @@ export class MessageProcessor {
   private currentReactions: Map<string, string> = new Map();
   private agentHandler: AgentHandler = new AgentHandler();
   private projectCommand: ProjectCommand = new ProjectCommand();
+  private onboardCommand: OnboardCommand = new OnboardCommand();
   private mcpCommand: McpCommand;
   private jobsCommand: JobsCommand;
   private agentsCommand: AgentsCommand = new AgentsCommand();
@@ -158,6 +160,7 @@ export class MessageProcessor {
 
     // Command routing
     if (text && await this.helpCommand.handle(ctx)) return;
+    if (text && await this.onboardCommand.handle(ctx)) return;
     if (text && await this.projectCommand.handle(ctx)) return;
     if (text && await this.modelCommand.handle(ctx)) return;
     if (text && await this.mcpCommand.handle(ctx)) return;

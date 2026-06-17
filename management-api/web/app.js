@@ -126,6 +126,14 @@ function app() {
     channelDir: [],
     channelNames: {},
     channelDirError: '',
+
+    // ---- Onboarding ----
+    onboarding: { items: [], summary: {} },
+    loadingOnboarding: false,
+    prefText: '',
+    prefScope: 'global',
+    prefMsg: '',
+    prefErr: false,
     newProjectName: '',
     newProjectError: '',
 
@@ -231,6 +239,7 @@ function app() {
       if (newTab === 'actions') { this.loadActions(); this.ensureWorkflowBuilderCatalogs(); }
       if (newTab === 'toolsets') this.loadToolsets();
       if (newTab === 'projects') this.loadProjects();
+      if (newTab === 'onboarding') this.loadOnboarding();
       if (newTab === 'tools') this.loadTools();
     },
 
@@ -1762,6 +1771,35 @@ Evaluator must include PASS. Otherwise the candidate output is fed back to Worke
       if (!channelId) return;
       project._newChannel = channelId;
       await this.addProjectChannel(project);
+    },
+
+    // ---- Onboarding ----
+    async loadOnboarding(fresh) {
+      this.loadingOnboarding = true;
+      try {
+        const r = await fetch('api/onboarding/status' + (fresh ? '?fresh=1' : ''));
+        this.onboarding = await r.json();
+        this.markApiOk();
+      } catch (err) { console.error('onboarding load failed', err); this.reportApiError('Onboarding status failed', err); }
+      finally { this.loadingOnboarding = false; }
+    },
+
+    async savePreference() {
+      this.prefMsg = ''; this.prefErr = false;
+      if (!this.prefText.trim()) { this.prefErr = true; this.prefMsg = 'Enter a preference first.'; return; }
+      try {
+        const r = await fetch('api/onboarding/preferences', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scope: this.prefScope, text: this.prefText }),
+        });
+        const data = await r.json();
+        if (!r.ok) { this.prefErr = true; this.prefMsg = data.error || 'Save failed'; return; }
+        this.prefMsg = 'Saved → ' + data.file;
+        this.prefText = '';
+        this.notify('Preference saved to CLAUDE.md');
+        setTimeout(() => { this.prefMsg = ''; }, 6000);
+      } catch (err) { this.prefErr = true; this.prefMsg = err.message; }
     },
 
     async submitNewProject() {

@@ -2,6 +2,10 @@ import { CommandContext } from './types';
 
 const HELP_TEXT = `*Commands*
 
+*Setup*
+\`$onboard\` — check integration readiness + next steps
+\`$remember <preference>\` — save a working preference to this project's CLAUDE.md
+
 *Agents*
 \`$agents list\` — list all agents with status and model
 \`$agents create\` — conversational multi-step agent creation

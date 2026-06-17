@@ -124,6 +124,7 @@
     </div>
     <div class="flex gap-1 flex-1 min-w-0 items-center nav-strip">
       <button @click="navigate('overview')" :class="tab === 'overview' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded text-sm transition flex-shrink-0">Overview</button>
+      <button @click="navigate('onboarding')" :class="tab === 'onboarding' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded text-sm transition flex-shrink-0">Onboarding</button>
       <button @click="navigate('projects')" :class="tab === 'projects' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded text-sm transition flex-shrink-0">Projects</button>
       <div class="relative flex-shrink-0" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
         <button @click="open = !open"
@@ -1921,6 +1922,64 @@
         </div>
       </template>
       <div x-show="projects.length === 0 && !loadingProjects" class="col-span-2 text-gray-600 text-sm">No projects found.</div>
+    </div>
+  </div>
+
+  <!-- ==================== ONBOARDING TAB ==================== -->
+  <div x-show="tab === 'onboarding'" class="p-6 max-w-3xl space-y-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-sm text-gray-400 uppercase tracking-widest">Onboarding</h2>
+        <p class="text-xs text-gray-600 mt-0.5">Get set up: integrations, then preferences, then your first project.</p>
+      </div>
+      <button @click="loadOnboarding(true)" :disabled="loadingOnboarding" class="px-3 py-1.5 border border-gray-800 text-gray-300 hover:text-white hover:border-gray-700 text-sm rounded transition disabled:opacity-50" x-text="loadingOnboarding ? 'Checking…' : 'Re-check'"></button>
+    </div>
+
+    <!-- 1 · Integrations -->
+    <div>
+      <div class="flex items-center gap-2 mb-3">
+        <h3 class="text-xs font-semibold text-gray-300 uppercase tracking-wider">1 · Integrations</h3>
+        <span x-show="onboarding.summary && onboarding.summary.total" class="text-xs text-gray-600" x-text="(onboarding.summary.ok || 0) + '/' + (onboarding.summary.total || 0) + ' ready'"></span>
+      </div>
+      <div x-show="loadingOnboarding && !(onboarding.items || []).length" class="text-gray-600 text-sm">Checking integrations…</div>
+      <div class="space-y-2">
+        <template x-for="it in (onboarding.items || [])" :key="it.id">
+          <div class="border border-gray-800 rounded-lg p-3">
+            <div class="flex items-start gap-2">
+              <span class="mt-0.5 text-sm flex-shrink-0" :class="it.status === 'ok' ? 'text-green-400' : (it.status === 'warn' ? 'text-amber-400' : 'text-red-400')" x-text="it.status === 'ok' ? '✓' : (it.status === 'warn' ? '⚠' : '✗')"></span>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm text-gray-200" x-text="it.label"></div>
+                <div class="text-xs text-gray-500 mt-0.5 break-words" x-text="it.detail"></div>
+                <div x-show="it.status !== 'ok' && it.fix" class="text-xs text-gray-400 mt-1 bg-gray-900 border border-gray-800 rounded px-2 py-1 font-mono break-words" x-text="it.fix"></div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- 2 · Organizational preferences -->
+    <div>
+      <h3 class="text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">2 · Organizational preferences</h3>
+      <p class="text-xs text-gray-600 mb-2">Tell the bot how you like to work — saved to a <span class="font-mono">CLAUDE.md</span> it reads every session.</p>
+      <div class="space-y-2">
+        <select x-model="prefScope" class="bg-gray-900 border border-gray-800 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-indigo-500">
+          <option value="global">Global (all sessions)</option>
+          <template x-for="p in projects" :key="p.name"><option :value="p.name" x-text="'Project: ' + p.name"></option></template>
+        </select>
+        <textarea x-model="prefText" rows="3" placeholder="e.g. Track tasks as markdown files in tasks/. Summarize client meetings into notes/. Never modify the sales channel." class="w-full bg-gray-900 border border-gray-800 rounded px-2 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-indigo-500"></textarea>
+        <div class="flex items-center gap-2">
+          <button @click="savePreference()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded transition">Save preference</button>
+          <span x-show="prefMsg" class="text-xs break-all" :class="prefErr ? 'text-red-400' : 'text-green-400'" x-text="prefMsg"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 · First project -->
+    <div>
+      <h3 class="text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">3 · Your first project</h3>
+      <p class="text-xs text-gray-600 mb-2">Create a workspace, then map its Slack channels and bind its Salesforce records + Drive folder.</p>
+      <button @click="navigate('projects')" class="px-3 py-1.5 border border-gray-800 text-gray-300 hover:text-white hover:border-gray-700 text-sm rounded transition">Go to Projects →</button>
     </div>
   </div>
 

@@ -26,6 +26,7 @@ const channelsRouter = require('./routes/channels');
 const budgetsRouter = require('./routes/budgets');
 const notificationsRouter = require('./routes/notifications');
 const evalsRouter = require('./routes/evals');
+const onboardingRouter = require('./routes/onboarding');
 
 const app = express();
 const PORT = process.env.MANAGEMENT_PORT || 3456;
@@ -83,6 +84,7 @@ app.use('/agents/api/channels', channelsRouter);
 app.use('/agents/api/budgets', budgetsRouter);
 app.use('/agents/api/notifications', notificationsRouter);
 app.use('/agents/api/evals', evalsRouter);
+app.use('/agents/api/onboarding', onboardingRouter);
 
 app.get('/agents', (req, res) => {
   res.redirect('/agents/');
