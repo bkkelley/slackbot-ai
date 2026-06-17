@@ -1,0 +1,13 @@
+{
+  "name": "claude-scheduler",
+  "version": "1.0.0",
+  "description": "Standalone cron scheduler for Claude Code Slack bot",
+  "main": "runner.js",
+  "scripts": {
+    "start": "node runner.js"
+  },
+  "dependencies": {
+    "cron-parser": "^4.9.0",
+    "dotenv": "^16.6.0"
+  }
+}

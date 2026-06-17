@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Runtime state / databases
+data/
+agent-runtime/agent-channels.json
+scheduler/job-state.json
+
+# MCP server config (may contain sensitive endpoints)
+mcp-servers.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
+
+# Claude
+.claude/*
+!.claude/agents/
+!.claude/agents/*.md
+.agents/agent-backups/
+
+# channel→project mappings (machine-local)
+channel-projects.json
+
+# machine-local scratch + logs
+.local/

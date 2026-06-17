@@ -1,0 +1,80 @@
+[
+  {
+    "id": "sage-morning-nudge",
+    "cron": "0 8 * * *",
+    "slackChannel": "C0B46F2KJHK",
+    "enabled": false,
+    "lastRun": "2026-05-25T13:00:51.701Z",
+    "agent": "Sage",
+    "action": "Morning Nudge",
+    "mode": "async",
+    "toolset": "default",
+    "outputChannel": {
+      "platform": "slack",
+      "id": "C0B46F2KJHK"
+    },
+    "description": null
+  },
+  {
+    "id": "inbox-processor",
+    "cron": "*/15 * * * *",
+    "command": "/bin/bash $HOME/claude-workspaces/admin/Meta/run-inbox-processor.sh",
+    "enabled": false,
+    "lastRun": "2026-05-25T02:00:52.064Z"
+  },
+  {
+    "id": "extract-ppao",
+    "cron": "0 11 * * *",
+    "command": "/opt/homebrew/bin/node $HOME/claude-workspaces/system/scheduler/extract-ppao.js",
+    "enabled": false,
+    "lastRun": "2026-05-30T16:00:10.292Z"
+  },
+  {
+    "id": "extract-projects",
+    "cron": "0 11 * * *",
+    "command": "/opt/homebrew/bin/node $HOME/claude-workspaces/system/scheduler/extract-projects.js",
+    "enabled": false,
+    "lastRun": "2026-05-30T16:00:10.292Z"
+  },
+  {
+    "id": "extract-sources",
+    "cron": "0 11 * * *",
+    "command": "/opt/homebrew/bin/node $HOME/claude-workspaces/system/scheduler/extract-sources.js",
+    "enabled": false,
+    "lastRun": "2026-05-30T16:00:10.292Z"
+  },
+  {
+    "id": "extract-tags",
+    "cron": "0 11 * * *",
+    "command": "/opt/homebrew/bin/node $HOME/claude-workspaces/system/scheduler/extract-tags.js",
+    "enabled": false,
+    "lastRun": "2026-05-30T16:00:10.292Z"
+  },
+  {
+    "id": "obsidian-backup",
+    "cron": "0 0 * * *",
+    "command": "/bin/bash $HOME/claude-workspaces/system/scripts/obsidian-backup.sh",
+    "enabled": false,
+    "lastRun": "2026-05-30T05:00:10.817Z"
+  },
+  {
+    "id": "documentation-updater-nightly",
+    "cron": "0 1 * * *",
+    "enabled": false,
+    "lastRun": "2026-05-23T06:00:24.919Z",
+    "agent": "Documentation Updater",
+    "action": "Nightly Scan",
+    "mode": "async",
+    "toolset": "default"
+  },
+  {
+    "id": "documentation-updater-sync-test",
+    "mode": "sync",
+    "agent": "Documentation Updater",
+    "action": "Nightly Scan",
+    "cron": "0 0 * * *",
+    "slackChannel": "D0B14GKU0LB",
+    "enabled": false,
+    "lastRun": null
+  }
+]

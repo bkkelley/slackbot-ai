@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "default": {
+    "mode": "immediate",
+    "notifyOnFailure": true
+  },
+  "agents": {
+    "Ask the System": {
+      "mode": "immediate",
+      "notifyOnFailure": true
+    }
+  },
+  "workflows": {},
+  "toolsets": {},
+  "triggers": {
+    "schedule": {
+      "mode": "failures_only",
+      "notifyOnFailure": true
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "enabled": true,
+  "daily": {
+    "maxCostUsd": 10,
+    "maxRuns": 200
+  },
+  "agents": {
+    "Ask the System": {
+      "maxCostUsd": 2,
+      "maxRuns": 30
+    }
+  },
+  "workflows": {},
+  "toolsets": {
+    "extended": {
+      "maxCostUsd": 3,
+      "maxRuns": 20
+    },
+    "code": {
+      "maxCostUsd": 3,
+      "maxRuns": 30
+    },
+    "web": {
+      "maxCostUsd": 3,
+      "maxRuns": 40
+    }
+  },
+  "triggers": {}
+}
