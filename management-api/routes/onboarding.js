@@ -96,6 +96,21 @@ async function checkOutlook() {
   return item('outlook', 'Outlook (Home tab inbox/calendar)', 'warn', mode || 'not reachable', 'Open Outlook (Legacy mode), sign in, and grant the macOS Automation permission');
 }
 
+// Supermemory is an OPTIONAL feature: 'ok' when off (nothing wrong) or running,
+// 'warn' only when enabled-but-unreachable (needs the server started).
+async function checkSupermemory() {
+  const enabled = process.env.SUPERMEMORY_ENABLED === 'true';
+  const url = process.env.SUPERMEMORY_URL || 'http://localhost:6767';
+  if (!enabled) {
+    return item('supermemory', 'Supermemory (long-term memory)', 'ok', 'disabled — optional feature',
+      'Optional. To enable, follow the Supermemory steps in this guide, then set SUPERMEMORY_ENABLED=true');
+  }
+  const code = await httpCode(`${url}/`);
+  if (code === 200) return item('supermemory', 'Supermemory (long-term memory)', 'ok', `enabled — running at ${url}`);
+  return item('supermemory', 'Supermemory (long-term memory)', 'warn', `enabled but not reachable at ${url}`,
+    'Start it: launchctl kickstart -k gui/$(id -u)/com.slackbot.supermemory');
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Guided setup wizard content.
 // Each guide's `id` aligns with a /status item id where a live check exists
@@ -180,6 +195,17 @@ const GUIDE = [
       { title: 'Grant Automation + verify', body: 'First run triggers a macOS Automation permission prompt — allow it. Then:', code: 'bash ~/.claude/skills/outlook/mail.sh mode   # prints: legacy' },
     ],
   },
+  {
+    id: 'supermemory', label: 'Supermemory (long-term memory)', check: 'supermemory', optional: true,
+    why: 'Optional self-hosted memory + recall, fully offline (Ollama for fact extraction, local embeddings). When enabled, the bot and agents auto-recall relevant facts and can store new ones with the Memory/Recall tools.',
+    steps: [
+      { title: 'Install the server', body: 'Installs a single local binary to ~/.supermemory/bin (no Docker).', code: 'curl -fsSL https://supermemory.ai/install | bash' },
+      { title: 'Pull the extraction model (offline)', body: 'Any Ollama chat model works; embeddings run locally regardless.', code: 'ollama pull llama3.1:8b' },
+      { title: 'Configure for Ollama', body: 'Edit ~/.supermemory/env:', code: 'OPENAI_BASE_URL=http://localhost:11434/v1\nOPENAI_API_KEY=ollama\nOPENAI_MODEL=llama3.1:8b\nPORT=6767\nSUPERMEMORY_DATA_DIR=~/.supermemory/data' },
+      { title: 'Enable it in this system', body: 'The API key prints on first server boot (sm_…). Add to the shared .env:', code: 'SUPERMEMORY_ENABLED=true\nSUPERMEMORY_URL=http://localhost:6767\nSUPERMEMORY_API_KEY=sm_...' },
+      { title: 'Run always-on + restart consumers', body: 'Install the com.slackbot.supermemory LaunchAgent (see SETUP.md §6), then restart the bot + runtime so they pick up the env:', code: 'launchctl kickstart -k gui/$(id -u)/com.slackbot.bot\nlaunchctl kickstart -k gui/$(id -u)/com.slackbot.runtime' },
+    ],
+  },
 ];
 
 // GET /guide — the step-by-step setup content for the wizard
@@ -201,7 +227,7 @@ router.get('/status', async (req, res) => {
   try {
     if (_cache.data && Date.now() - _cache.at < 20000 && !req.query.fresh) return res.json(_cache.data);
     const items = await Promise.all([
-      checkServices(), checkSlackScopes(), checkSlackMcp(), checkSalesforce(), Promise.resolve(checkDrive()), checkOutlook(),
+      checkServices(), checkSlackScopes(), checkSlackMcp(), checkSalesforce(), Promise.resolve(checkDrive()), checkOutlook(), checkSupermemory(),
     ]);
     const summary = { ok: items.filter((c) => c.status === 'ok').length, warn: items.filter((c) => c.status === 'warn').length, missing: items.filter((c) => c.status === 'missing' || c.status === 'error').length, total: items.length };
     _cache = { at: Date.now(), data: { items, summary } };
@@ -213,6 +239,7 @@ router.get('/status', async (req, res) => {
 const CHECKS = {
   services: checkServices, slack_app: checkSlackScopes, slack_mcp: checkSlackMcp,
   salesforce: checkSalesforce, drive: () => Promise.resolve(checkDrive()), outlook: checkOutlook,
+  supermemory: checkSupermemory,
 };
 router.get('/status/:id', async (req, res) => {
   const fn = CHECKS[req.params.id];

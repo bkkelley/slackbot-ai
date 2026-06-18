@@ -457,6 +457,21 @@ If no `persona` field is set, behavior is unchanged.
 
 ---
 
+## Supermemory (optional long-term memory)
+
+An **opt-in**, self-hosted memory + recall layer ([supermemory](https://github.com/supermemoryai/supermemory)). Fully offline: an Ollama chat model does fact extraction, embeddings run locally (WASM). The whole feature no-ops unless `SUPERMEMORY_ENABLED=true` — every call fails soft, so the system behaves identically when it's not installed.
+
+**Server:** the `supermemory-server` binary (`~/.supermemory/bin/`) on port **6767**, run as the `com.slackbot.supermemory` LaunchAgent. Config in `~/.supermemory/env` (Ollama via `OPENAI_BASE_URL=http://localhost:11434/v1`). API key (`sm_…`) prints on first boot.
+
+**Wiring (only when enabled):**
+- **Bot** — auto-recalls relevant memories into each prompt (`[Relevant memory]` preamble) and auto-stores durable user messages; also gets `Recall`/`Memory` MCP tools via `supermemory-mcp-server.ts`. Client: `slack-bot/src/orchestration/supermemory.ts`.
+- **Agents** — `context-assembler.ts` injects a `=== RELEVANT MEMORY ===` section. Client: `agent-runtime/src/supermemory.ts`.
+- **Onboarding** — an optional readiness check + a guided install entry in the Onboarding wizard.
+
+**Local API used:** `POST /v3/documents` (store) and `POST /v3/search` (recall — semantic search over stored content chunks). Env: `SUPERMEMORY_ENABLED`, `SUPERMEMORY_URL`, `SUPERMEMORY_API_KEY`. Install steps: SETUP.md §6d.
+
+---
+
 ## LaunchAgents
 
 Plist files: `~/Library/LaunchAgents/`
@@ -466,6 +481,7 @@ Plist files: `~/Library/LaunchAgents/`
 | `com.slackbot.runtime` | Agent runtime daemon (always-on) — port 3457 |
 | `com.slackbot.bot` | Slack/Discord bot (always-on) — port 3458 |
 | `com.slackbot.management` | Management UI + API (always-on) — port 3456 |
+| `com.slackbot.supermemory` | Supermemory server (optional memory; only if enabled) — port 6767 |
 
 ```bash
 launchctl list | grep com.slackbot

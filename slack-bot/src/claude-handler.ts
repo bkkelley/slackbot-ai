@@ -143,10 +143,26 @@ export class ClaudeHandler {
       if (process.env.SLACK_MCP_ENABLED !== 'false') {
         mcpServers['slack'] = { type: 'http', url: process.env.SLACK_MCP_URL || 'https://mcp.slack.com/mcp' };
       }
+
+      // Supermemory: optional self-hosted long-term memory. Only wired when SUPERMEMORY_ENABLED=true;
+      // the tools (Recall/Memory) fail soft if the server is down, so it degrades gracefully.
+      if (process.env.SUPERMEMORY_ENABLED === 'true') {
+        const memFile = path.join(__dirname, isTypescript ? 'supermemory-mcp-server.ts' : 'supermemory-mcp-server.js');
+        mcpServers['supermemory'] = {
+          command,
+          args: [...extraArgs, memFile],
+          env: {
+            SUPERMEMORY_URL: process.env.SUPERMEMORY_URL ?? 'http://localhost:6767',
+            SUPERMEMORY_API_KEY: process.env.SUPERMEMORY_API_KEY ?? '',
+            SLACK_CONTEXT: JSON.stringify(slackContext),
+          },
+        };
+      }
     }
 
     const mcpToolPrefixes = this.mcpManager.getDefaultAllowedTools();
     if (slackContext) mcpToolPrefixes.push('mcp__permission-prompt', 'mcp__slack-tools', 'mcp__slack');
+    if (slackContext && process.env.SUPERMEMORY_ENABLED === 'true') mcpToolPrefixes.push('mcp__supermemory');
     allowedTools.push(...mcpToolPrefixes);
 
     const args: string[] = [

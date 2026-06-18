@@ -238,6 +238,37 @@ The bot already has the `Bash` tool, so once the CLI is authenticated and the sk
 code changes are needed. **Safety:** the skill requires naming the org on every command and confirming
 before any write — important since one machine is authenticated to many client orgs (sandbox/prod).
 
+### 6d. Supermemory — long-term memory + recall [manual, optional]
+Opt-in, self-hosted memory ([supermemory](https://github.com/supermemoryai/supermemory)). Fully offline:
+an Ollama chat model extracts facts, embeddings run locally. When enabled, the bot/agents auto-recall
+relevant memories into their prompts and gain `Recall`/`Memory` tools. The whole feature no-ops unless
+`SUPERMEMORY_ENABLED=true`, so skipping this changes nothing.
+
+1. **Install the server** (single local binary, no Docker): `curl -fsSL https://supermemory.ai/install | bash`
+   → installs `~/.supermemory/bin/supermemory-server`.
+2. **Pull an extraction model** (any Ollama chat model; embeddings are local regardless):
+   `ollama pull llama3.1:8b`.
+3. **Configure for Ollama** — write `~/.supermemory/env`:
+   ```
+   OPENAI_BASE_URL=http://localhost:11434/v1
+   OPENAI_API_KEY=ollama
+   OPENAI_MODEL=llama3.1:8b
+   PORT=6767
+   SUPERMEMORY_DATA_DIR=/Users/<you>/.supermemory/data
+   ```
+4. **First boot prints the API key** (`sm_…`): run `~/.supermemory/bin/supermemory-server` once, copy the key.
+5. **Enable in the shared `.env`:**
+   ```
+   SUPERMEMORY_ENABLED=true
+   SUPERMEMORY_URL=http://localhost:6767
+   SUPERMEMORY_API_KEY=sm_...
+   ```
+6. **Run always-on** — create `~/Library/LaunchAgents/com.slackbot.supermemory.plist` (ProgramArguments =
+   the binary; EnvironmentVariables = the §3 vars), `launchctl bootstrap gui/$(id -u) …`, then restart the
+   bot + runtime so they pick up the env. Verify in the dashboard **Onboarding** tab (Supermemory → Verify now).
+
+Recall searches stored content via `POST /v3/search`; new facts are added via `POST /v3/documents`.
+
 ---
 
 ## 7. Verify [auto]

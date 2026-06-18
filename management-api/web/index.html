@@ -1954,6 +1954,7 @@
               <span class="text-sm flex-shrink-0" :class="g.check ? statusColor(guideStatus(g)) : 'text-gray-600'"
                     x-text="g.check ? statusIcon(guideStatus(g)) : '○'"></span>
               <span class="text-sm flex-1 min-w-0 truncate" :class="activeGuideId === g.id ? 'text-white' : 'text-gray-300'" x-text="g.label"></span>
+              <span x-show="g.optional" class="text-[10px] text-indigo-400/70 uppercase tracking-wide flex-shrink-0">optional</span>
               <span x-show="!g.check" class="text-[10px] text-gray-600 uppercase tracking-wide flex-shrink-0">manual</span>
             </button>
           </template>

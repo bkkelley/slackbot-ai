@@ -6,6 +6,7 @@ import { ClaudeHandler, SDKMessage } from '../claude-handler';
 import { McpManager } from './mcp-manager';
 import { SessionManager } from './session-manager';
 import { resolveProject, projectPreamble, sanitizeProject } from './channel-projects';
+import { memoryEnabled, recall, recallPreamble, remember, worthRemembering } from './supermemory';
 import { TodoManager, Todo } from './todo-manager';
 import { RateLimiter } from './rate-limiter';
 import { ModelManager } from './model-manager';
@@ -230,7 +231,16 @@ export class MessageProcessor {
       const basePrompt = processedFiles.length > 0
         ? await this.formatFilePrompt(processedFiles, promptText)
         : promptText;
-      const finalPrompt = projectPreamble(project, workingDirectory) + basePrompt;
+
+      // Optional auto-recall: pull relevant long-term memory and inject it ahead of the prompt.
+      // No-ops (empty string) when Supermemory is disabled or unreachable.
+      let memoryPreamble = '';
+      if (memoryEnabled() && promptText.trim()) {
+        const hits = await recall(promptText);
+        memoryPreamble = recallPreamble(hits);
+        if (hits.length) this.logger.debug('Injected memory recall', { hits: hits.length });
+      }
+      const finalPrompt = projectPreamble(project, workingDirectory) + memoryPreamble + basePrompt;
 
       this.logger.info('Sending query to Claude', {
         prompt: finalPrompt.substring(0, 200) + (finalPrompt.length > 200 ? '...' : ''),
@@ -319,6 +329,13 @@ export class MessageProcessor {
 
       if (claudeSucceeded) await this.transport.send(channelId, effectiveThreadId, '✅ *Task completed*');
       await this.updateMessageReaction(sessionKey, '✅');
+
+      // Optional auto-store: remember durable user messages for future recall (fire-and-forget).
+      // No-ops when Supermemory is disabled; Claude can also store explicitly via the Memory tool.
+      if (claudeSucceeded && memoryEnabled() && worthRemembering(promptText)) {
+        void remember(promptText, { user: userId, channel: channelId, project: project || undefined, source: 'slack' })
+          .then((saved) => { if (saved) this.logger.debug('Auto-stored message to memory'); });
+      }
 
       this.logger.info('Completed processing message', { sessionKey, messageCount: currentMessages.size });
     } catch (error: any) {
