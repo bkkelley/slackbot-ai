@@ -185,43 +185,6 @@ window.AppModules.jobDetail = {
       return this.runInspector().files || [];
     },
 
-    inspectorMemory() {
-      return this.runInspector().memory || {};
-    },
-
-    inspectorMemoryCards() {
-      const memory = this.inspectorMemory();
-      const stats = memory.stats || {};
-      return [
-        { label: 'Backend', value: memory.backend || '-' },
-        { label: 'Available', value: memory.available === true ? 'yes' : memory.available === false ? 'no' : '-' },
-        { label: 'Memories', value: stats.totalMemories !== null && stats.totalMemories !== undefined ? this.formatNumber(stats.totalMemories) : '-' },
-        { label: 'Recall Hits', value: memory.recall?.resultCount !== undefined ? this.formatNumber(memory.recall.resultCount) : '-' },
-        { label: 'Recall Chars', value: memory.recall?.chars !== undefined ? this.formatNumber(memory.recall.chars) : '-' },
-      ];
-    },
-
-    inspectorMemoryRows() {
-      const memory = this.inspectorMemory();
-      const stats = memory.stats || {};
-      return [
-        ['Config', memory.configPath || '-'],
-        ['Command', memory.command || '-'],
-        ['Query', memory.query || '-'],
-        ['Bank', stats.banks || '-'],
-        ['DB', stats.dbPath || '-'],
-      ];
-    },
-
-    inspectorMemorySources() {
-      return this.inspectorMemory().sources || [];
-    },
-
-    inspectorMemoryRecallText() {
-      const memory = this.inspectorMemory();
-      return memory.recall?.raw || memory.recall?.error || '';
-    },
-
     inspectorTools() {
       return this.runInspector().tools || {};
     },

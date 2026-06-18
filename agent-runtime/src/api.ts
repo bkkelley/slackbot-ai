@@ -15,7 +15,6 @@ import { createRequire } from 'module';
 import { getBudgetPolicyPath, saveBudgetPolicy } from './budgets.js';
 import { getNotificationPolicyPath, loadNotificationPolicy, saveNotificationPolicy } from './notifications.js';
 import { assemblePrompt } from './context-assembler.js';
-import { inspectMnemosyneMemory } from './memory.js';
 
 const logger = new Logger('api');
 const require = createRequire(import.meta.url);
@@ -412,7 +411,6 @@ export class ApiServer {
       const approvals = this.queue.listApprovals({ limit: 500 }).filter((approval) => approval.workflowJobId === job.id);
       const promptSources = inspectPromptSources(job);
       const files = inspectFiles(job, cwd);
-      const memory = inspectMnemosyneMemory(job);
       const result = job.result;
       const resultCounts = {
         cards: result?.cardFiles?.length ?? 0,
@@ -472,7 +470,6 @@ export class ApiServer {
             error: promptError ?? null,
             sources: promptSources,
           },
-          memory,
           files,
           tools: {
             requestedToolset: tools.requestedToolset,
