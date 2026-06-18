@@ -29,8 +29,9 @@ export class TasksCommand {
       try {
         const result = await this.transport.createTaskList(createMatch[1].trim(), ctx.user);
         const link = result.permalink ? `\n🔗 ${result.permalink}` : '';
+        const col = result.primaryColumnId ?? '';
         await say({
-          text: `✅ Created list *${createMatch[1].trim()}*.${link}\nList ID: \`${result.listId}\`\n\nAdd to it with \`$tasks add ${result.listId} <task>\`.`,
+          text: `✅ Created list *${createMatch[1].trim()}*.${link}\nList ID: \`${result.listId}\`\nColumn ID: \`${col}\`\n\nAdd to it with \`$tasks add ${result.listId} ${col} <task>\`.`,
           thread_ts: thread_ts || ts,
         });
       } catch (err) {
@@ -39,10 +40,12 @@ export class TasksCommand {
       return true;
     }
 
-    const addMatch = sub.match(/^add\s+(\S+)\s+(.+)$/i);
+    // `$tasks add <listId> <columnId> <task>` — Slack only returns a list's column schema at
+    // creation time (no read-back API), so the columnId from `$tasks create` must be supplied.
+    const addMatch = sub.match(/^add\s+(\S+)\s+(\S+)\s+(.+)$/i);
     if (addMatch) {
       try {
-        await this.transport.addTask(addMatch[1], addMatch[2].trim());
+        await this.transport.addTask(addMatch[1], addMatch[3].trim(), addMatch[2]);
         await say({ text: `✅ Added task to \`${addMatch[1]}\`.`, thread_ts: thread_ts || ts });
       } catch (err) {
         await say({ text: `❌ Could not add task: \`${this.msg(err)}\``, thread_ts: thread_ts || ts });
@@ -69,8 +72,8 @@ export class TasksCommand {
     await say({
       text: [
         '*$tasks commands* _(Slack Lists — requires a paid plan)_:',
-        '`$tasks create <name>` — create a task list (returns its ID)',
-        '`$tasks add <listId> <task>` — add a task',
+        '`$tasks create <name>` — create a task list (returns its ID + column ID)',
+        '`$tasks add <listId> <columnId> <task>` — add a task',
         '`$tasks list <listId>` — show tasks in a list',
       ].join('\n'),
       thread_ts: thread_ts || ts,

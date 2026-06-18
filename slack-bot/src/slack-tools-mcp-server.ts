@@ -116,10 +116,17 @@ const TOOLS = [
   },
   {
     name: 'AddTask',
-    description: 'Add an item to a Slack List by listId.',
+    description:
+      'Add an item to a Slack List by listId. Pass the columnId returned as primaryColumnId by CreateTaskList. ' +
+      'If you created the list in this same session you may omit columnId — it is remembered automatically. ' +
+      'Slack has no API to look a list\'s columns back up after creation, so columnId cannot be auto-resolved for a pre-existing list.',
     inputSchema: {
       type: 'object',
-      properties: { listId: { type: 'string' }, text: { type: 'string' } },
+      properties: {
+        listId: { type: 'string' },
+        text: { type: 'string' },
+        columnId: { type: 'string', description: 'The primaryColumnId from CreateTaskList. Optional if the list was created this session.' },
+      },
       required: ['listId', 'text'],
     },
   },
@@ -136,6 +143,10 @@ const TOOLS = [
 
 class SlackToolsServer {
   private server = new Server({ name: 'slack-tools', version: '1.0.0' }, { capabilities: { tools: {} } });
+  // Slack returns a list's column schema ONLY in the slackLists.create response — there is no API to
+  // read columns back later. Remember each list's primary column so AddTask works without the model
+  // having to thread columnId through every call within a session.
+  private listColumns = new Map<string, string>();
 
   constructor() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
@@ -166,10 +177,12 @@ class SlackToolsServer {
           }
           case 'CreateTaskList': {
             const r = await proxy('task', { op: 'create-list', name: a.name, grantUserId: CTX.user });
+            if (r.listId && r.primaryColumnId) this.listColumns.set(r.listId, r.primaryColumnId);
             return ok({ listId: r.listId, primaryColumnId: r.primaryColumnId, permalink: r.permalink });
           }
           case 'AddTask': {
-            const r = await proxy('task', { op: 'add', listId: a.listId, text: a.text });
+            const columnId = a.columnId ?? this.listColumns.get(a.listId);
+            const r = await proxy('task', { op: 'add', listId: a.listId, text: a.text, columnId });
             return ok({ itemId: r.itemId });
           }
           case 'ListTasks': {

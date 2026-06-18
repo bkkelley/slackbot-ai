@@ -484,15 +484,17 @@ export class SlackTransport implements ChannelTransport {
     };
   }
 
-  private async resolvePrimaryColumnId(listId: string): Promise<string | undefined> {
-    const result: any = await this.app.client.apiCall('slackLists.columns.list', { list_id: listId });
-    const columns: any[] = result.columns ?? result.list_metadata?.schema ?? result.schema ?? [];
-    return SlackTransport.primaryColumn(columns)?.id;
-  }
-
   async addTask(listId: string, text: string, columnId?: string): Promise<CreatedTask> {
-    const colId = columnId ?? (await this.resolvePrimaryColumnId(listId));
-    if (!colId) throw new Error('Could not resolve a text column for the list');
+    // Slack's Lists API returns a list's column schema ONLY in the slackLists.create response — there
+    // is no slackLists.info / columns.list method to read it back. So a columnId MUST be supplied
+    // (createTaskList returns it as primaryColumnId; the MCP layer caches it per session).
+    if (!columnId) {
+      throw new Error(
+        'addTask requires a columnId (the primaryColumnId returned by createTaskList). ' +
+          'Slack has no API to resolve a list\'s columns after creation.'
+      );
+    }
+    const colId = columnId;
     const result: any = await this.app.client.apiCall('slackLists.items.create', {
       list_id: listId,
       initial_fields: [{ column_id: colId, rich_text: SlackTransport.toRichText(text) }],
