@@ -1970,6 +1970,18 @@
           <p class="text-xs text-gray-500 mb-2" x-text="activeGuide && activeGuide.why"></p>
           <div x-show="activeGuide && activeGuide.check && guideDetail(activeGuide)" class="text-xs text-gray-400 mb-3 bg-gray-900 border border-gray-800 rounded px-2 py-1 break-words" x-text="guideDetail(activeGuide)"></div>
 
+          <!-- Enable/disable toggle (memory only) -->
+          <div x-show="activeGuide && activeGuide.toggle" class="mb-4 flex items-center justify-between gap-3 border border-gray-800 rounded-lg p-3 bg-gray-900/50">
+            <div class="min-w-0">
+              <div class="text-sm text-gray-200">Use long-term memory in the assistant</div>
+              <div class="text-xs text-gray-600 mt-0.5" x-text="supermemoryEnabled() ? 'Enabled — the bot & agents auto-recall and can store memories.' : 'Disabled — the assistant ignores memory entirely.'"></div>
+            </div>
+            <button @click="toggleSupermemory(!supermemoryEnabled())" :disabled="togglingMemory"
+              class="px-3 py-1.5 text-sm rounded transition flex-shrink-0 disabled:opacity-50"
+              :class="supermemoryEnabled() ? 'border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600' : 'bg-indigo-600 hover:bg-indigo-500 text-white'"
+              x-text="togglingMemory ? 'Applying…' : (supermemoryEnabled() ? 'Disable' : 'Enable')"></button>
+          </div>
+
           <ol class="space-y-3">
             <template x-for="(step, i) in (activeGuide ? activeGuide.steps : [])" :key="i">
               <li class="flex gap-3">

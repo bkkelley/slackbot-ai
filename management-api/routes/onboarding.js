@@ -29,6 +29,24 @@ async function httpCode(url, headers) {
 // status: 'ok' | 'warn' | 'missing' | 'error'
 const item = (id, label, status, detail, fix) => ({ id, label, status, detail: detail || '', fix: fix || '' });
 
+// Shared .env lives at the repo root (management-api is a direct child). Read/write a single flag
+// in place so a UI toggle can flip it; consumers (bot/runtime) pick it up on restart.
+const ENV_PATH = path.join(__dirname, '..', '..', '.env');
+function readEnvFlag(name) {
+  try {
+    const m = fs.readFileSync(ENV_PATH, 'utf8').match(new RegExp('^' + name + '=(.*)$', 'm'));
+    return m ? m[1].trim() : '';
+  } catch { return ''; }
+}
+function setEnvFlag(name, value) {
+  let txt = '';
+  try { txt = fs.readFileSync(ENV_PATH, 'utf8'); } catch { /* new file */ }
+  const line = `${name}=${value}`;
+  const re = new RegExp('^' + name + '=.*$', 'm');
+  txt = re.test(txt) ? txt.replace(re, line) : (txt + (txt && !txt.endsWith('\n') ? '\n' : '') + line + '\n');
+  fs.writeFileSync(ENV_PATH, txt);
+}
+
 async function checkServices() {
   const [rt, bot] = await Promise.all([httpCode(`${RUNTIME}/api/jobs`, { 'X-Bot-Auth': SECRET }), httpCode(`${BOT}/`, {})]);
   const rtOk = rt === 200;
@@ -99,16 +117,19 @@ async function checkOutlook() {
 // Supermemory is an OPTIONAL feature: 'ok' when off (nothing wrong) or running,
 // 'warn' only when enabled-but-unreachable (needs the server started).
 async function checkSupermemory() {
-  const enabled = process.env.SUPERMEMORY_ENABLED === 'true';
+  // Read from the .env file (not process.env) so a UI toggle is reflected without restarting this API.
+  const enabled = readEnvFlag('SUPERMEMORY_ENABLED') === 'true';
   const url = process.env.SUPERMEMORY_URL || 'http://localhost:6767';
-  if (!enabled) {
-    return item('supermemory', 'Supermemory (long-term memory)', 'ok', 'disabled — optional feature',
-      'Optional. To enable, follow the Supermemory steps in this guide, then set SUPERMEMORY_ENABLED=true');
-  }
   const code = await httpCode(`${url}/`);
-  if (code === 200) return item('supermemory', 'Supermemory (long-term memory)', 'ok', `enabled — running at ${url}`);
-  return item('supermemory', 'Supermemory (long-term memory)', 'warn', `enabled but not reachable at ${url}`,
-    'Start it: launchctl kickstart -k gui/$(id -u)/com.slackbot.supermemory');
+  const reachable = code === 200;
+  if (!enabled) {
+    return { ...item('supermemory', 'Supermemory (long-term memory)', 'ok',
+      reachable ? 'disabled — optional (server is running, just not in use)' : 'disabled — optional feature',
+      'Optional. Toggle it on here once the server is installed and running.'), enabled: false, reachable };
+  }
+  if (reachable) return { ...item('supermemory', 'Supermemory (long-term memory)', 'ok', `enabled — running at ${url}`), enabled: true, reachable };
+  return { ...item('supermemory', 'Supermemory (long-term memory)', 'warn', `enabled but not reachable at ${url}`,
+    'Start it: launchctl kickstart -k gui/$(id -u)/com.slackbot.supermemory'), enabled: true, reachable };
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -196,7 +217,7 @@ const GUIDE = [
     ],
   },
   {
-    id: 'supermemory', label: 'Supermemory (long-term memory)', check: 'supermemory', optional: true,
+    id: 'supermemory', label: 'Supermemory (long-term memory)', check: 'supermemory', optional: true, toggle: true,
     why: 'Optional self-hosted memory + recall, fully offline (Ollama for fact extraction, local embeddings). When enabled, the bot and agents auto-recall relevant facts and can store new ones with the Memory/Recall tools.',
     steps: [
       { title: 'Install the server', body: 'Installs a single local binary to ~/.supermemory/bin (no Docker).', code: 'curl -fsSL https://supermemory.ai/install | bash' },
@@ -245,6 +266,22 @@ router.get('/status/:id', async (req, res) => {
   const fn = CHECKS[req.params.id];
   if (!fn) return res.status(404).json({ error: 'unknown check' });
   try { res.json(await fn()); } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /supermemory/toggle — enable/disable the optional memory feature for the assistant.
+// Flips SUPERMEMORY_ENABLED in the shared .env and restarts the bot + runtime so they pick it up.
+// (The Supermemory server itself has its own LaunchAgent; on enable we also try to (re)start it.)
+router.post('/supermemory/toggle', (req, res) => {
+  const enabled = !!(req.body && req.body.enabled);
+  try {
+    setEnvFlag('SUPERMEMORY_ENABLED', enabled ? 'true' : 'false');
+    const uid = typeof process.getuid === 'function' ? process.getuid() : '';
+    const targets = ['bot', 'runtime'].concat(enabled ? ['supermemory'] : []);
+    for (const svc of targets) {
+      sh('launchctl', ['kickstart', '-k', `gui/${uid}/com.slackbot.${svc}`]).catch(() => {});
+    }
+    res.json({ ok: true, enabled, note: 'Saved. Bot + runtime are restarting to apply (a few seconds).' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // POST /preferences — append an organizational preference to a CLAUDE.md (global or project scope)
