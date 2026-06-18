@@ -1914,6 +1914,7 @@
               <input x-model="project.salesforce.projectId" placeholder="Project__c Id" class="bg-gray-900 border border-gray-800 rounded px-2 py-1 text-xs text-gray-300 font-mono focus:outline-none focus:border-indigo-500" />
             </div>
             <input x-model="project.drivePath" placeholder="Google Drive folder (absolute path)" class="w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-xs text-gray-300 font-mono focus:outline-none focus:border-indigo-500" />
+            <input x-model="project._aliasText" placeholder="Aliases (comma-separated) — mention any in a DM to auto-scope, e.g. grx, good rx" class="w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-indigo-500" />
             <div class="flex items-center gap-2">
               <button @click="saveProjectBinding(project)" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded transition">Save bindings</button>
               <span x-show="project._savedMsg" class="text-xs" :class="project._savedErr ? 'text-red-400' : 'text-green-400'" x-text="project._savedMsg"></span>

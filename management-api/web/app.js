@@ -1751,6 +1751,8 @@ Evaluator must include PASS. Otherwise the candidate output is fed back to Worke
       try {
         const r = await fetch('api/projects');
         this.projects = await r.json();
+        // seed the editable aliases text field from the saved list
+        (this.projects || []).forEach((p) => { p._aliasText = (p.aliases || []).join(', '); });
         this.loadChannelDirectory();
         this.markApiOk();
       } catch (err) { console.error('projects load failed', err); this.reportApiError('Projects load failed', err); }
@@ -1915,7 +1917,7 @@ Evaluator must include PASS. Otherwise the candidate output is fed back to Worke
         const r = await fetch(`api/projects/${encodeURIComponent(project.name)}/bindings`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ salesforce: project.salesforce, drivePath: project.drivePath }),
+          body: JSON.stringify({ salesforce: project.salesforce, drivePath: project.drivePath, aliases: project._aliasText || '' }),
         });
         const data = await r.json();
         if (!r.ok) { project._savedErr = true; project._savedMsg = data.error || 'Save failed'; return; }

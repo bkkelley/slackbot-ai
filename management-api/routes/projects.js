@@ -67,6 +67,7 @@ function bindingsFor(name, byProject) {
     channels: Array.from(new Set([...(m.channels || []), ...((byProject || {})[name] || [])])),
     salesforce: { org: sf.org || '', accountId: sf.accountId || '', projectId: sf.projectId || '' },
     drivePath: m.drivePath || '',
+    aliases: Array.isArray(m.aliases) ? m.aliases : [],
   };
 }
 function saveChannelMap(map) {
@@ -188,7 +189,7 @@ router.put('/:name/bindings', (req, res) => {
   try {
     const safeName = assertSafeSegment(req.params.name, 'project name');
     const dir = safeJoin(baseDirectory, safeName);
-    const { salesforce, drivePath } = req.body || {};
+    const { salesforce, drivePath, aliases } = req.body || {};
     if (salesforce) {
       if (salesforce.accountId && !isSfId(salesforce.accountId)) {
         return res.status(400).json({ error: 'Account Id must be a 15- or 18-char Salesforce ID' });
@@ -209,6 +210,11 @@ router.put('/:name/bindings', (req, res) => {
     }
     // strip surrounding quotes — paths with spaces/commas are often pasted shell-quoted
     if (drivePath !== undefined) m.drivePath = (drivePath || '').trim().replace(/^["']|["']$/g, '');
+    // aliases: accept a comma/newline-separated string or an array
+    if (aliases !== undefined) {
+      const list = Array.isArray(aliases) ? aliases : String(aliases || '').split(/[,\n]/);
+      m.aliases = list.map((a) => String(a).trim()).filter(Boolean);
+    }
     fs.writeFileSync(manifestPath(safeName), JSON.stringify(m, null, 2) + '\n');
     res.json({ ok: true, name: safeName, ...bindingsFor(safeName, channelsByProject()) });
   } catch (err) {
