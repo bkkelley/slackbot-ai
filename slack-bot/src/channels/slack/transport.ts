@@ -135,7 +135,7 @@ export class SlackTransport implements ChannelTransport {
       const sfOrg = (values.sf_org?.val?.value || '').trim();
       const sfAccount = (values.sf_account?.val?.value || '').trim();
       const sfProject = (values.sf_project?.val?.value || '').trim();
-      const drivePath = (values.drive_path?.val?.value || '').trim();
+      const drivePath = (values.drive_path?.val?.value || '').trim().replace(/^["']|["']$/g, '');
       if ((sfAccount && !isSalesforceId(sfAccount)) || (sfProject && !isSalesforceId(sfProject))) {
         await ack({
           response_action: 'errors',

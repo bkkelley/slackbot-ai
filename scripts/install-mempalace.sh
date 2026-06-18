@@ -24,10 +24,10 @@ MEM="$(command -v mempalace || echo "$HOME/.local/bin/mempalace")"
 [ -x "$MEM" ] || { echo "! MemPalace install failed — install uv (https://docs.astral.sh/uv) or pipx and re-run." >&2; exit 1; }
 echo "✓ MemPalace installed: $("$MEM" --version 2>/dev/null || echo present)"
 
-# 2. Index content (first run downloads a ~300MB embedding model; idempotent thereafter)
-echo "▶ Indexing workspaces + Claude session transcripts (first run is slow)…"
+# 2. Index content (first run downloads a ~300MB embedding model; idempotent thereafter).
+# Only the curated workspaces — NOT ~/.claude/projects (stale/cross-client session history).
+echo "▶ Indexing workspaces (first run is slow)…"
 "$MEM" mine "$HOME/claude-workspaces" >/dev/null 2>&1 || true
-[ -d "$HOME/.claude/projects" ] && "$MEM" mine "$HOME/.claude/projects" --mode convos >/dev/null 2>&1 || true
 echo "✓ Indexed. ($("$MEM" status 2>/dev/null | grep -ci drawers || echo 0) rooms filed)"
 
 # 3. Enable + restart consumers

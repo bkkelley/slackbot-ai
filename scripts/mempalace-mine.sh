@@ -21,12 +21,11 @@ if [ ! -x "$MEM" ]; then
   exit 0
 fi
 
+# Mine ONLY the curated workspaces (vault cards, notes, project files). We intentionally do
+# NOT mine ~/.claude/projects (all Claude Code session transcripts): that pulls in obsolete
+# history (e.g. the old crew system) and mixes every client's context together, which led the
+# bot to answer from stale memory. Keep memory scoped to current, curated work.
 echo "[mempalace-mine] mining workspaces…"
 "$MEM" mine "$HOME/claude-workspaces" 2>&1 | tail -3 || true
-
-if [ -d "$HOME/.claude/projects" ]; then
-  echo "[mempalace-mine] mining Claude session transcripts…"
-  "$MEM" mine "$HOME/.claude/projects" --mode convos 2>&1 | tail -3 || true
-fi
 
 echo "[mempalace-mine] done."

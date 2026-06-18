@@ -276,8 +276,8 @@ so skipping this changes nothing.
 2. **Index your content** (first run downloads a ~300 MB embedding model):
    ```
    mempalace mine ~/claude-workspaces
-   mempalace mine ~/.claude/projects --mode convos
    ```
+   (Only the curated workspaces — not `~/.claude/projects`, which would pull in stale/cross-client session history.)
    This is automated going forward by the `mempalace-mine` scheduler job (hourly, idempotent) —
    `scripts/mempalace-mine.sh`, which self-gates on `MEMORY_ENABLED`.
 3. **Enable it:** set `MEMORY_ENABLED=true` in the shared `.env` (or flip the toggle in the dashboard

@@ -461,7 +461,7 @@ If no `persona` field is set, behavior is unchanged.
 
 An **opt-in** local memory + recall layer ([MemPalace](https://github.com/mempalace/mempalace)). **Fully offline** — local embeddings, **no API key, no LLM**. The whole feature no-ops unless `MEMORY_ENABLED=true`; every call fails soft, so the system behaves identically when it's not installed.
 
-**How memory is populated:** `mempalace mine` indexes content into a local "palace" (`~/.mempalace/palace`). A scheduled shell job (`mempalace-mine`, hourly) mines `~/claude-workspaces` (project files, vault cards, notes) and `~/.claude/projects` (Claude session transcripts, `--mode convos`). Script: `scripts/mempalace-mine.sh` (self-gates on `MEMORY_ENABLED`).
+**How memory is populated:** `mempalace mine` indexes content into a local "palace" (`~/.mempalace/palace`). A scheduled shell job (`mempalace-mine`, hourly) mines **`~/claude-workspaces`** (project files, vault cards, notes). Script: `scripts/mempalace-mine.sh` (self-gates on `MEMORY_ENABLED`). We deliberately do **not** mine `~/.claude/projects` (all Claude Code session transcripts) — that pulls in obsolete history and mixes every client's context together, which makes recall surface stale/cross-project answers.
 
 **Wiring (only when enabled):**
 - **Bot** — auto-recalls relevant context into each prompt (`[Relevant memory]` preamble) via `mempalace search`, and gets MemPalace's tools through its native `mempalace-mcp` stdio server (registered in `claude-handler.ts`). Client: `slack-bot/src/orchestration/memory.ts`.

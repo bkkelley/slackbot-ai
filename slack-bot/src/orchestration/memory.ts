@@ -5,7 +5,7 @@
  * (returns []) so the bot behaves identically when memory isn't installed/enabled.
  *
  * MemPalace is local + offline (local embeddings, no API key). Memory is populated by
- * `mempalace mine` (a scheduled job indexes the workspaces + Claude session transcripts);
+ * `mempalace mine` (a scheduled job indexes the workspaces — project files, notes, vault cards);
  * here we only RECALL via `mempalace search`, which we shell out to and parse.
  */
 
@@ -58,5 +58,5 @@ export async function recall(query: string, limit = 5): Promise<string[]> {
 export function recallPreamble(snippets: string[]): string {
   if (!snippets.length) return '';
   const lines = snippets.map((s) => `- ${s}`).join('\n');
-  return `[Relevant memory — recalled from your notes and past sessions. Use if relevant to this request; ignore if not.]\n${lines}\n\n`;
+  return `[Relevant memory — recalled from your project notes and files. Use if relevant to this request; ignore if not.]\n${lines}\n\n`;
 }

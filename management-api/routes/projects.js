@@ -207,7 +207,8 @@ router.put('/:name/bindings', (req, res) => {
         projectId: (salesforce.projectId || '').trim(),
       };
     }
-    if (drivePath !== undefined) m.drivePath = (drivePath || '').trim();
+    // strip surrounding quotes — paths with spaces/commas are often pasted shell-quoted
+    if (drivePath !== undefined) m.drivePath = (drivePath || '').trim().replace(/^["']|["']$/g, '');
     fs.writeFileSync(manifestPath(safeName), JSON.stringify(m, null, 2) + '\n');
     res.json({ ok: true, name: safeName, ...bindingsFor(safeName, channelsByProject()) });
   } catch (err) {

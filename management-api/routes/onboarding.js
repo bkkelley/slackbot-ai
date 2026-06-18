@@ -198,7 +198,7 @@ const GUIDE = [
   },
   {
     id: 'memory', label: 'Long-term memory (MemPalace)', check: 'memory', optional: true, toggle: true,
-    why: 'Optional local memory + recall (github.com/mempalace/mempalace). Fully offline — local embeddings, no API key, no LLM. When on, the bot & agents auto-recall from your notes and past sessions.',
+    why: 'Optional local memory + recall (github.com/mempalace/mempalace). Fully offline — local embeddings, no API key, no LLM. When on, the bot & agents auto-recall from your project notes and files.',
     steps: [
       { title: 'Turn it on (one command, from the repo root)', body: 'Installs MemPalace, indexes your workspaces + Claude sessions, sets MEMORY_ENABLED=true, and restarts the bot + runtime. A scheduled job re-mines hourly.', code: './scripts/install-mempalace.sh' },
       { title: 'Or use the toggle above', body: 'Once installed you can flip memory on/off here anytime.' },
