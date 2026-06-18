@@ -34,5 +34,18 @@ set_kv SLACK_APP_TOKEN "$APP"
 set_kv SLACK_OWNER_USER_ID "$OWNER"
 echo "✓ Wrote Slack credentials to .env"
 
-launchctl kickstart -k "gui/$(id -u)/com.slackbot.bot" >/dev/null 2>&1 && echo "✓ Bot restarting to pick them up." || echo "! Could not restart the bot (is it installed? run ./scripts/bootstrap.sh)."
+# Restart every service that reads .env at startup. The bot needs the tokens to connect;
+# the management-api caches SLACK_BOT_TOKEN in process.env for its onboarding readiness
+# check, so it too must reload or it will keep reporting a stale invalid_auth.
+restarted=""
+for svc in bot management runtime; do
+  if launchctl kickstart -k "gui/$(id -u)/com.slackbot.$svc" >/dev/null 2>&1; then
+    restarted="$restarted $svc"
+  fi
+done
+if [ -n "$restarted" ]; then
+  echo "✓ Restarting to pick them up:$restarted"
+else
+  echo "! Could not restart services (are they installed? run ./scripts/bootstrap.sh)."
+fi
 echo "Verify in the dashboard → Onboarding tab → Slack app → Re-check."
