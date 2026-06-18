@@ -130,6 +130,10 @@ function app() {
     // ---- Onboarding ----
     onboarding: { items: [], summary: {} },
     loadingOnboarding: false,
+    guide: [],                 // step-by-step wizard content (from /onboarding/guide)
+    activeGuideId: '',         // currently-open integration in the wizard
+    verifyingId: '',           // id being re-checked by "Verify now"
+    copiedKey: '',             // which code block was last copied (for the ✓ flash)
     prefText: '',
     prefScope: 'global',
     prefMsg: '',
@@ -185,7 +189,7 @@ function app() {
     async init() {
       this.applyTheme(this.theme);
       const hash = location.hash.replace('#', '') || 'overview';
-      const validTabs = ['overview', 'ask', 'activity', 'agents', 'actions', 'jobs', 'channels', 'approvals', 'efficiency', 'evals', 'logs', 'files', 'health', 'inbox', 'workflows', 'skills', 'personas', 'toolsets', 'projects', 'guide', 'tools'];
+      const validTabs = ['overview', 'onboarding', 'ask', 'activity', 'agents', 'actions', 'jobs', 'channels', 'approvals', 'efficiency', 'evals', 'logs', 'files', 'health', 'inbox', 'workflows', 'skills', 'personas', 'toolsets', 'projects', 'guide', 'tools'];
       this.tab = validTabs.includes(hash) ? hash : 'overview';
 
       window.addEventListener('hashchange', () => {
@@ -1777,11 +1781,63 @@ Evaluator must include PASS. Otherwise the candidate output is fed back to Worke
     async loadOnboarding(fresh) {
       this.loadingOnboarding = true;
       try {
-        const r = await fetch('api/onboarding/status' + (fresh ? '?fresh=1' : ''));
-        this.onboarding = await r.json();
+        const reqs = [fetch('api/onboarding/status' + (fresh ? '?fresh=1' : ''))];
+        if (!this.guide.length) reqs.push(fetch('api/onboarding/guide'));
+        const [statusR, guideR] = await Promise.all(reqs);
+        this.onboarding = await statusR.json();
+        if (guideR) this.guide = (await guideR.json()).guide || [];
+        if (!this.activeGuideId && this.guide.length) {
+          // open the first integration that isn't ready yet (else the first one)
+          const firstNotOk = this.guide.find((g) => g.check && this.guideStatus(g) !== 'ok');
+          this.activeGuideId = (firstNotOk || this.guide[0]).id;
+        }
         this.markApiOk();
       } catch (err) { console.error('onboarding load failed', err); this.reportApiError('Onboarding status failed', err); }
       finally { this.loadingOnboarding = false; }
+    },
+
+    // live status for a guide item ('ok' | 'warn' | 'missing' | '' for manual/no-check)
+    guideStatus(g) {
+      if (!g || !g.check) return '';
+      const it = (this.onboarding.items || []).find((i) => i.id === g.check);
+      return it ? it.status : '';
+    },
+    guideDetail(g) {
+      if (!g || !g.check) return '';
+      const it = (this.onboarding.items || []).find((i) => i.id === g.check);
+      return it ? it.detail : '';
+    },
+    statusIcon(s) { return s === 'ok' ? '✓' : (s === 'warn' ? '⚠' : (s === 'missing' || s === 'error' ? '✗' : '○')); },
+    statusColor(s) { return s === 'ok' ? 'text-green-400' : (s === 'warn' ? 'text-amber-400' : (s === 'missing' || s === 'error' ? 'text-red-400' : 'text-gray-600')); },
+    get activeGuide() { return this.guide.find((g) => g.id === this.activeGuideId) || null; },
+
+    // re-run a single integration's check after the user follows the steps
+    async verifyGuide(g) {
+      if (!g || !g.check) return;
+      this.verifyingId = g.id;
+      try {
+        const r = await fetch('api/onboarding/status/' + g.check);
+        const item = await r.json();
+        const items = (this.onboarding.items || []).slice();
+        const idx = items.findIndex((i) => i.id === g.check);
+        if (idx >= 0) items[idx] = item; else items.push(item);
+        this.onboarding = { ...this.onboarding, items, summary: {
+          ok: items.filter((i) => i.status === 'ok').length,
+          warn: items.filter((i) => i.status === 'warn').length,
+          missing: items.filter((i) => i.status === 'missing' || i.status === 'error').length,
+          total: items.length,
+        } };
+        this.notify(item.status === 'ok' ? (g.label + ' is ready ✓') : (g.label + ': ' + (item.detail || item.status)));
+      } catch (err) { this.reportApiError('Verify failed', err); }
+      finally { this.verifyingId = ''; }
+    },
+
+    async copyCode(text, key) {
+      try {
+        await navigator.clipboard.writeText(text);
+        this.copiedKey = key;
+        setTimeout(() => { if (this.copiedKey === key) this.copiedKey = ''; }, 1500);
+      } catch (e) { /* clipboard blocked — no-op */ }
     },
 
     async savePreference() {

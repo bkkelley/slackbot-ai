@@ -96,6 +96,95 @@ async function checkOutlook() {
   return item('outlook', 'Outlook (Home tab inbox/calendar)', 'warn', mode || 'not reachable', 'Open Outlook (Legacy mode), sign in, and grant the macOS Automation permission');
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Guided setup wizard content.
+// Each guide's `id` aligns with a /status item id where a live check exists
+// (services, slack_app, slack_mcp, salesforce, drive, outlook); `manual: true`
+// guides (prereqs, env) have no auto-check and are confirmed by the user.
+// Steps render in order; `code` blocks get a copy button in the dashboard.
+// ─────────────────────────────────────────────────────────────────────────
+const GUIDE = [
+  {
+    id: 'prereqs', label: 'Prerequisites', manual: true,
+    why: 'The bot spawns the Claude CLI and runs as macOS LaunchAgents, so these must work on their own first.',
+    steps: [
+      { title: 'macOS + Node ≥ 20', body: 'Install Node (developed on v24). Note the absolute path to its bin dir — the LaunchAgents need it on PATH.', code: 'brew install node\nwhich node    # note this path' },
+      { title: 'Claude Code CLI signed in', body: 'The bot spawns `claude`, so its auth must work independently. This should return text:', code: 'claude -p "say hi"' },
+      { title: 'Get the code', body: 'Copy this `slackbot-ai` folder onto the machine. Everything else derives from `$HOME` + the repo location.' },
+    ],
+  },
+  {
+    id: 'env', label: 'Environment (.env)', manual: true,
+    why: 'One shared .env is symlinked into each service. It holds the Slack tokens and the internal shared secret.',
+    steps: [
+      { title: 'Create the shared .env', body: 'In the repo root. Fill the three Slack values from the next step; the secret is generated for you.',
+        code: 'cat > .env <<EOF\nSLACK_BOT_TOKEN=xoxb-...\nSLACK_APP_TOKEN=xapp-...\nSLACK_OWNER_USER_ID=U...\nBOT_RUNTIME_SHARED_SECRET=$(openssl rand -hex 24)\nMANAGEMENT_PORT=3456\nRUNTIME_HTTP_PORT=3457\nBOT_HTTP_PORT=3458\nMANAGEMENT_BIND_HOST=127.0.0.1\nPUBLIC_BASE_URL=http://localhost:3456\nEOF\nchmod 600 .env' },
+      { title: 'Symlink it into each service', code: 'for s in slack-bot agent-runtime management-api; do ln -sf ../.env "$s/.env"; done' },
+    ],
+  },
+  {
+    id: 'services', label: 'Core services', check: 'services',
+    why: 'agent-runtime (3457), slack-bot (3458) and management-api (3456) run as always-on LaunchAgents.',
+    steps: [
+      { title: 'Install deps + build', code: '( cd shared && npm install --no-audit --no-fund )\n( cd management-api && npm install --no-audit --no-fund )\n( cd slack-bot && npm install && npm run build )\n( cd agent-runtime && npm install && npm run build )' },
+      { title: 'Create workspace + vault dirs', code: 'mkdir -p ~/claude-workspaces/admin/{Agent,Card,_agent_actions,_workflows,_personas}\nmkdir -p ~/claude-workspaces/general\nmkdir -p .local/logs agent-runtime/data' },
+      { title: 'Install the three LaunchAgents', body: 'Create `~/Library/LaunchAgents/com.slackbot.{runtime,bot,management}.plist` (see SETUP.md §5 for the template — paths must be absolute, and PATH must include your node bin dir). Then load them, runtime first:',
+        code: 'UID=$(id -u)\nfor s in runtime management bot; do\n  launchctl bootstrap gui/$UID ~/Library/LaunchAgents/com.slackbot.$s.plist\ndone' },
+      { title: 'Restart later / check status', code: 'launchctl list | grep com.slackbot\nlaunchctl kickstart -k gui/$(id -u)/com.slackbot.bot' },
+    ],
+  },
+  {
+    id: 'slack_app', label: 'Slack app + scopes', check: 'slack_app',
+    why: 'The bot talks to Slack via a Slack app in Socket Mode. You create it once and paste two tokens into .env.',
+    steps: [
+      { title: 'Create the app from a manifest', body: 'Go to api.slack.com/apps → Create New App → From a manifest. (The bundled manifest is out of date — use the scopes/events below.)' },
+      { title: 'Bot token scopes', body: 'Under OAuth & Permissions, add these bot scopes:',
+        code: 'app_mentions:read chat:write chat:write.public\nchannels:history groups:history im:history im:read im:write\nusers:read reactions:write\ncanvases:read canvases:write\nreminders:read reminders:write\nlists:read lists:write   # Lists need a PAID Slack plan\nfiles:read files:write links:read pins:read pins:write' },
+      { title: 'Event subscriptions', body: 'Subscribe to these bot events:', code: 'app_mention\nmessage.im\nmember_joined_channel\nchannel_created\napp_home_opened' },
+      { title: 'Turn on Socket Mode, Interactivity, Home tab', body: 'Socket Mode: ON → generate an App-Level Token (xapp-…) with `connections:write`. Interactivity: ON. App Home → Home Tab: ON.' },
+      { title: 'Install + collect tokens', body: 'Install to Workspace → copy the Bot User OAuth Token (xoxb-…). Copy the app-level token (xapp-…). From your Slack profile → ⋯ → Copy member ID (U…). Put all three in .env (previous section), then reinstall the bot:', code: 'launchctl kickstart -k gui/$(id -u)/com.slackbot.bot' },
+    ],
+  },
+  {
+    id: 'slack_mcp', label: 'Read your Slack messages', check: 'slack_mcp',
+    why: 'For "find my commitments from the last hour," the bot uses the hosted Slack MCP, acting as you. Authenticate once; the OAuth token lands in your login Keychain and headless sessions reuse it.',
+    steps: [
+      { title: 'Register the hosted MCP', code: 'claude mcp add --transport http --scope user slack https://mcp.slack.com/mcp' },
+      { title: 'Authenticate as yourself', body: 'Open Claude interactively, then authenticate via the browser:', code: 'claude\n#   then:  /mcp  →  slack  →  Authenticate' },
+      { title: 'Confirm connected', code: 'claude mcp list    # expect: slack ... ✔ Connected' },
+    ],
+  },
+  {
+    id: 'salesforce', label: 'Salesforce orgs', check: 'salesforce',
+    why: 'Lets the bot query/describe orgs via the sf CLI (no MCP). Authenticate each org once; tokens are machine-global so the bot reuses them.',
+    steps: [
+      { title: 'Install the CLI', code: 'npm install -g @salesforce/cli\nsf --version' },
+      { title: 'Authenticate each org (browser, once)', code: 'sf org login web --alias <alias>\nsf org list' },
+      { title: 'Install the salesforce skill', body: 'Copy `salesforce/SKILL.md` to `~/.claude/skills/salesforce/SKILL.md`. It is read-only by instruction and always targets an explicit `--target-org`.' },
+    ],
+  },
+  {
+    id: 'drive', label: 'Google Drive', check: 'drive',
+    why: 'Projects can bind a Google Drive folder. Using Google Drive for Desktop, Claude reads/writes it with normal file tools — no API/OAuth.',
+    steps: [
+      { title: 'Install Google Drive for Desktop', body: 'Install from google.com/drive/download and sign in. It mounts under `~/Library/CloudStorage/GoogleDrive-<account>/`.' },
+      { title: 'Bind a folder to a project', body: 'Later, on a project: `$project drive <absolute path>` in Slack, or the Projects tab here.' },
+    ],
+  },
+  {
+    id: 'outlook', label: 'Outlook (Home tab)', check: 'outlook',
+    why: 'Optional. Powers the Home tab inbox + calendar via the outlook skill. Requires Outlook for Mac in Legacy mode.',
+    steps: [
+      { title: 'Install the outlook skill', body: 'Copy the skill (mail.sh, cal.sh, SKILL.md) to `~/.claude/skills/outlook/`.' },
+      { title: 'Switch Outlook to Legacy mode', body: 'New Outlook has no working AppleScript. In Outlook for Mac, turn off "New Outlook".' },
+      { title: 'Grant Automation + verify', body: 'First run triggers a macOS Automation permission prompt — allow it. Then:', code: 'bash ~/.claude/skills/outlook/mail.sh mode   # prints: legacy' },
+    ],
+  },
+];
+
+// GET /guide — the step-by-step setup content for the wizard
+router.get('/guide', (_req, res) => res.json({ guide: GUIDE }));
+
 // GET /status — readiness of every integration (cached 20s)
 let _cache = { at: 0, data: null };
 router.get('/status', async (req, res) => {
@@ -108,6 +197,17 @@ router.get('/status', async (req, res) => {
     _cache = { at: Date.now(), data: { items, summary } };
     res.json(_cache.data);
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /status/:id — re-run a single integration check (used by the wizard's "Verify now")
+const CHECKS = {
+  services: checkServices, slack_app: checkSlackScopes, slack_mcp: checkSlackMcp,
+  salesforce: checkSalesforce, drive: () => Promise.resolve(checkDrive()), outlook: checkOutlook,
+};
+router.get('/status/:id', async (req, res) => {
+  const fn = CHECKS[req.params.id];
+  if (!fn) return res.status(404).json({ error: 'unknown check' });
+  try { res.json(await fn()); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // POST /preferences — append an organizational preference to a CLAUDE.md (global or project scope)

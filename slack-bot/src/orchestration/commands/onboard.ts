@@ -54,7 +54,7 @@ export class OnboardCommand {
           '*Next steps:*',
           '• Map a project here: `$project map <name>`, then `$project sf <org> <AccountId> <Project__cId>` and `$project drive <path>`',
           '• Capture a working preference: `$remember <how you like to work>`',
-          '• Or use the *Onboarding* tab in the management dashboard for the full checklist + forms',
+          `• Step-by-step setup for anything not ready: the *Onboarding* tab → ${process.env.PUBLIC_BASE_URL || 'http://localhost:3456'}/agents/#onboarding`,
         ].join('\n');
         await reply(`*Setup status — ${s.ok || 0}/${s.total || 0} ready*\n\n${lines.join('\n')}\n\n${next}`);
       } catch (e: any) {

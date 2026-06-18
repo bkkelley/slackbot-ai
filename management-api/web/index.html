@@ -1935,26 +1935,67 @@
       <button @click="loadOnboarding(true)" :disabled="loadingOnboarding" class="px-3 py-1.5 border border-gray-800 text-gray-300 hover:text-white hover:border-gray-700 text-sm rounded transition disabled:opacity-50" x-text="loadingOnboarding ? 'Checking…' : 'Re-check'"></button>
     </div>
 
-    <!-- 1 · Integrations -->
+    <!-- 1 · Guided setup wizard -->
     <div>
       <div class="flex items-center gap-2 mb-3">
-        <h3 class="text-xs font-semibold text-gray-300 uppercase tracking-wider">1 · Integrations</h3>
+        <h3 class="text-xs font-semibold text-gray-300 uppercase tracking-wider">1 · Set up integrations</h3>
         <span x-show="onboarding.summary && onboarding.summary.total" class="text-xs text-gray-600" x-text="(onboarding.summary.ok || 0) + '/' + (onboarding.summary.total || 0) + ' ready'"></span>
       </div>
-      <div x-show="loadingOnboarding && !(onboarding.items || []).length" class="text-gray-600 text-sm">Checking integrations…</div>
-      <div class="space-y-2">
-        <template x-for="it in (onboarding.items || [])" :key="it.id">
-          <div class="border border-gray-800 rounded-lg p-3">
-            <div class="flex items-start gap-2">
-              <span class="mt-0.5 text-sm flex-shrink-0" :class="it.status === 'ok' ? 'text-green-400' : (it.status === 'warn' ? 'text-amber-400' : 'text-red-400')" x-text="it.status === 'ok' ? '✓' : (it.status === 'warn' ? '⚠' : '✗')"></span>
-              <div class="flex-1 min-w-0">
-                <div class="text-sm text-gray-200" x-text="it.label"></div>
-                <div class="text-xs text-gray-500 mt-0.5 break-words" x-text="it.detail"></div>
-                <div x-show="it.status !== 'ok' && it.fix" class="text-xs text-gray-400 mt-1 bg-gray-900 border border-gray-800 rounded px-2 py-1 font-mono break-words" x-text="it.fix"></div>
-              </div>
-            </div>
+      <p class="text-xs text-gray-600 mb-3">Pick an integration to see step-by-step instructions. Follow the steps, then <span class="text-gray-400">Verify now</span> to confirm it's live.</p>
+      <div x-show="loadingOnboarding && !guide.length" class="text-gray-600 text-sm">Loading wizard…</div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4" x-show="guide.length">
+        <!-- left rail: integrations -->
+        <div class="md:col-span-1 space-y-1">
+          <template x-for="g in guide" :key="g.id">
+            <button @click="activeGuideId = g.id"
+              class="w-full text-left px-3 py-2 rounded-lg border transition flex items-center gap-2"
+              :class="activeGuideId === g.id ? 'bg-gray-800 border-gray-700' : 'border-gray-900 hover:border-gray-800'">
+              <span class="text-sm flex-shrink-0" :class="g.check ? statusColor(guideStatus(g)) : 'text-gray-600'"
+                    x-text="g.check ? statusIcon(guideStatus(g)) : '○'"></span>
+              <span class="text-sm flex-1 min-w-0 truncate" :class="activeGuideId === g.id ? 'text-white' : 'text-gray-300'" x-text="g.label"></span>
+              <span x-show="!g.check" class="text-[10px] text-gray-600 uppercase tracking-wide flex-shrink-0">manual</span>
+            </button>
+          </template>
+        </div>
+
+        <!-- right panel: steps for the active integration -->
+        <div class="md:col-span-2 border border-gray-800 rounded-lg p-4" x-show="activeGuide">
+          <div class="flex items-start justify-between gap-3 mb-1">
+            <h4 class="text-sm font-semibold text-white" x-text="activeGuide && activeGuide.label"></h4>
+            <span x-show="activeGuide && activeGuide.check" class="text-xs flex-shrink-0" :class="statusColor(guideStatus(activeGuide))"
+                  x-text="statusIcon(guideStatus(activeGuide)) + ' ' + (guideStatus(activeGuide) || 'unknown')"></span>
           </div>
-        </template>
+          <p class="text-xs text-gray-500 mb-2" x-text="activeGuide && activeGuide.why"></p>
+          <div x-show="activeGuide && activeGuide.check && guideDetail(activeGuide)" class="text-xs text-gray-400 mb-3 bg-gray-900 border border-gray-800 rounded px-2 py-1 break-words" x-text="guideDetail(activeGuide)"></div>
+
+          <ol class="space-y-3">
+            <template x-for="(step, i) in (activeGuide ? activeGuide.steps : [])" :key="i">
+              <li class="flex gap-3">
+                <span class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-800 text-gray-400 text-xs flex items-center justify-center mt-0.5" x-text="i + 1"></span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm text-gray-200" x-text="step.title"></div>
+                  <div x-show="step.body" class="text-xs text-gray-500 mt-0.5 break-words" x-text="step.body"></div>
+                  <div x-show="step.code" class="relative mt-1.5">
+                    <pre class="text-xs text-gray-300 bg-gray-950 border border-gray-800 rounded px-2 py-1.5 font-mono whitespace-pre-wrap break-words" x-text="step.code"></pre>
+                    <button @click="copyCode(step.code, activeGuide.id + ':' + i)"
+                      class="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded border border-gray-700 text-gray-400 hover:text-white hover:border-gray-600 bg-gray-900/80"
+                      x-text="copiedKey === (activeGuide.id + ':' + i) ? 'copied ✓' : 'copy'"></button>
+                  </div>
+                  <div x-show="step.note" class="text-xs text-amber-400/80 mt-1" x-text="step.note"></div>
+                </div>
+              </li>
+            </template>
+          </ol>
+
+          <div x-show="activeGuide && activeGuide.check" class="mt-4 pt-3 border-t border-gray-800 flex items-center gap-2">
+            <button @click="verifyGuide(activeGuide)" :disabled="verifyingId === (activeGuide && activeGuide.id)"
+              class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded transition disabled:opacity-50"
+              x-text="verifyingId === (activeGuide && activeGuide.id) ? 'Verifying…' : 'Verify now'"></button>
+            <span x-show="guideStatus(activeGuide) === 'ok'" class="text-xs text-green-400">Ready ✓</span>
+          </div>
+          <p x-show="activeGuide && !activeGuide.check" class="mt-4 pt-3 border-t border-gray-800 text-xs text-gray-600">Manual step — nothing to auto-verify. Continue once done.</p>
+        </div>
       </div>
     </div>
 
