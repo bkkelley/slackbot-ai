@@ -107,8 +107,11 @@ router.get('/', (req, res) => {
   }
 });
 
-// GET /channel-directory — Slack channels (id+name) for the picker, via the bot token. Cached 5 min.
-// Degrades gracefully: returns { ok:false, error } (e.g. missing_scope) so the UI falls back to paste-ID.
+// GET /channel-directory — channels the BOT is a member of, for the picker. Cached 5 min.
+// We use users.conversations (the bot's own memberships), NOT conversations.list (every public
+// channel), because mapping only does anything in channels the bot has been added to — it only
+// acts on @mention. This also surfaces private channels the bot was invited to. Degrades
+// gracefully: returns { ok:false, error } (e.g. missing_scope) so the UI falls back to paste-ID.
 let _chanCache = { at: 0, data: null };
 async function listSlackChannels() {
   const token = process.env.SLACK_BOT_TOKEN;
@@ -116,7 +119,7 @@ async function listSlackChannels() {
   const channels = [];
   let cursor = '';
   for (let i = 0; i < 25; i++) {
-    const url = new URL('https://slack.com/api/conversations.list');
+    const url = new URL('https://slack.com/api/users.conversations');
     url.searchParams.set('types', 'public_channel,private_channel');
     url.searchParams.set('exclude_archived', 'true');
     url.searchParams.set('limit', '200');

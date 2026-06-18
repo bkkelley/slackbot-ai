@@ -1887,25 +1887,25 @@
                 </template>
                 <span x-show="!(project.channels && project.channels.length)" class="text-xs text-gray-600 italic">no channels mapped</span>
               </div>
-              <!-- pick by name when the channel directory is available; otherwise paste an ID -->
-              <template x-if="channelDir && channelDir.length">
-                <select @change="if ($event.target.value) { addProjectChannelById(project, $event.target.value); $event.target.value=''; }"
-                  class="w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-indigo-500">
-                  <option value="">+ Add a channel…</option>
-                  <template x-for="c in channelDir.filter(c => !(project.channels || []).includes(c.id))" :key="c.id">
-                    <option :value="c.id" x-text="(c.is_private ? '🔒 ' : '# ') + c.name"></option>
-                  </template>
-                </select>
-              </template>
-              <template x-if="!(channelDir && channelDir.length)">
-                <div class="space-y-1">
-                  <div class="flex gap-2">
-                    <input x-model="project._newChannel" placeholder="Channel ID (e.g. C0AB12CDE)" @keydown.enter="addProjectChannel(project)" class="flex-1 bg-gray-900 border border-gray-800 rounded px-2 py-1 text-xs text-gray-300 font-mono focus:outline-none focus:border-indigo-500" />
-                    <button @click="addProjectChannel(project)" class="px-2 py-1 border border-gray-800 text-gray-300 hover:text-white hover:border-gray-700 text-xs rounded transition flex-shrink-0">Add</button>
-                  </div>
-                  <span x-show="channelDirError" class="text-[10px] text-gray-600">Add <span class="font-mono">channels:read</span> to the Slack app + reinstall to pick channels by name.</span>
+              <!-- The list shows only channels the BOT is a member of (it only acts where it's mentioned).
+                   You can always paste an ID for a channel the bot isn't in yet. -->
+              <div class="space-y-1">
+                <template x-if="channelDir && channelDir.length">
+                  <select @change="if ($event.target.value) { addProjectChannelById(project, $event.target.value); $event.target.value=''; }"
+                    class="w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-indigo-500">
+                    <option value="">+ Add a channel the bot is in…</option>
+                    <template x-for="c in channelDir.filter(c => !(project.channels || []).includes(c.id))" :key="c.id">
+                      <option :value="c.id" x-text="(c.is_private ? '🔒 ' : '# ') + c.name"></option>
+                    </template>
+                  </select>
+                </template>
+                <div class="flex gap-2">
+                  <input x-model="project._newChannel" placeholder="…or paste a channel ID (e.g. C0AB12CDE)" @keydown.enter="addProjectChannel(project)" class="flex-1 bg-gray-900 border border-gray-800 rounded px-2 py-1 text-xs text-gray-300 font-mono focus:outline-none focus:border-indigo-500" />
+                  <button @click="addProjectChannel(project)" class="px-2 py-1 border border-gray-800 text-gray-300 hover:text-white hover:border-gray-700 text-xs rounded transition flex-shrink-0">Add</button>
                 </div>
-              </template>
+                <span class="text-[10px] text-gray-600">Only channels the bot has been added to appear in the list — invite it to a channel and it shows up here. To map one it isn't in yet, paste the channel ID.</span>
+                <span x-show="channelDirError" class="text-[10px] text-gray-600 block">Add <span class="font-mono">channels:read</span> + <span class="font-mono">groups:read</span> to the Slack app + reinstall to list channels by name.</span>
+              </div>
               <span x-show="project._chanMsg" class="text-xs" :class="project._chanErr ? 'text-red-400' : 'text-green-400'" x-text="project._chanMsg"></span>
             </div>
             <div class="grid grid-cols-3 gap-2">
