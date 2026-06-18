@@ -1,12 +1,39 @@
 # Setup — Fresh Install on a New Mac
 
-How to stand up the whole system (agent-runtime + slack-bot + management-api) from scratch on a
-brand-new computer. There is **no installer yet** — this is the manual sequence. Steps marked
-**[auto]** are scriptable (a future `bootstrap.sh` could do them); steps marked **[manual]** require
-a human (browser sign-ins, Slack app creation, macOS permission grants).
+## Quick start (copy-paste)
+
+On a brand-new Mac, this is the whole thing — five copy-paste blocks, no files to hand-edit:
+
+```bash
+# 1. Prereqs (skip any you already have)
+brew install node
+claude -p "say hi"          # confirm the Claude CLI is signed in (must return text)
+
+# 2. Clone + bootstrap — installs deps, builds, makes dirs, scaffolds .env, starts all 3 services
+git clone <your-repo-url> ~/Documents/claude-workspaces/slackbot-ai
+cd ~/Documents/claude-workspaces/slackbot-ai
+./scripts/bootstrap.sh
+
+# 3. Create the Slack app: copy the manifest, then api.slack.com/apps → Create New App → From a manifest → paste
+cat slack-bot/slack-app-manifest.yaml | pbcopy
+#    In the app: generate an App-Level Token (scope connections:write) → xapp-… ;
+#    Install to Workspace → Bot User OAuth Token → xoxb-… ; your member ID (profile → ⋯ → Copy member ID) → U…
+
+# 4. Save the 3 Slack tokens (restarts the bot)
+./scripts/set-slack-creds.sh xoxb-YOUR-BOT-TOKEN xapp-YOUR-APP-TOKEN U-YOUR-MEMBER-ID
+
+# 5. (optional) Turn on local long-term memory
+./scripts/install-mempalace.sh
+```
+
+Then open the dashboard → **Onboarding** tab: <http://localhost:3456/agents/#onboarding>. It live-checks
+each integration and has the same copy-paste steps, plus optional add-ons (Slack-read MCP, Salesforce,
+Drive, Outlook). The rest of this doc is the manual reference behind those scripts.
 
 > Notation: `<repo>` = wherever you put this checkout (e.g. `~/Documents/claude-workspaces/slackbot-ai`).
-> Paths derive from `$HOME` + the repo location, so the checkout is relocatable.
+> Paths derive from `$HOME` + the repo location, so the checkout is relocatable. Steps marked **[auto]**
+> are what `./scripts/bootstrap.sh` does for you; **[manual]** steps need a human (browser sign-ins,
+> Slack app creation, macOS permission grants).
 
 ---
 
@@ -291,11 +318,18 @@ grep "is running" <repo>/.local/logs/com.slackbot.bot.out.log | tail -1   # ⚡�
 | 6b. Slack MCP OAuth | manual | `claude /mcp → Authenticate` browser sign-in |
 | 7. Verify | **auto** | health checks |
 
-## Not built yet (TODO for true reproducibility)
-1. **Regenerate `slack-bot/slack-app-manifest.yaml`** to the current feature set (Home tab on,
-   interactivity on, all scopes + events from §1) so app creation is paste-and-go.
-2. **`bootstrap.sh`** automating every **[auto]** step (deps, build, `.env` scaffold, dirs, plists, health).
-3. Keep this `SETUP.md` for the **[manual]** steps a script can't do.
+## Helper scripts (the copy-paste path)
 
-After those, a new machine becomes: create the Slack app from the manifest → `./bootstrap.sh` → two
-browser sign-ins (Slack MCP + Outlook permission).
+| Script | What it does |
+|---|---|
+| `scripts/bootstrap.sh` | Every **[auto]** step: deps, build, dirs, `.env` scaffold + symlinks, generate + load the 3 LaunchAgents, health check. Idempotent. |
+| `scripts/set-slack-creds.sh <xoxb> <xapp> <U-id>` | Writes the 3 Slack tokens into `.env` and restarts the bot. |
+| `scripts/install-mempalace.sh` | Installs MemPalace, indexes content, enables memory, restarts consumers. |
+| `scripts/mempalace-mine.sh` | Re-mines workspaces + Claude transcripts (the hourly `mempalace-mine` job; self-gates on `MEMORY_ENABLED`). |
+
+`slack-bot/slack-app-manifest.yaml` is current (Home tab + interactivity on, all scopes/events) — paste it
+into **Create New App → From a manifest**.
+
+What's still manual (a script can't): creating the Slack app + generating its tokens (browser), the Slack
+MCP OAuth (`claude → /mcp → Authenticate`), `sf org login web` per org, installing Google Drive for
+Desktop, and switching Outlook to Legacy mode + the macOS Automation grant.
