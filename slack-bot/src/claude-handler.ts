@@ -151,10 +151,24 @@ export class ClaudeHandler {
         const memBin = process.env.MEMPALACE_MCP_BIN || `${process.env.HOME}/.local/bin/mempalace-mcp`;
         mcpServers['mempalace'] = { command: memBin, args: [] };
       }
+
+      // System-control: lets the session operate the whole system in natural language (run/list/
+      // create/delete agents, workflows, jobs, schedules, projects) by wrapping the management API.
+      const sysFile = path.join(__dirname, isTypescript ? 'system-control-mcp-server.ts' : 'system-control-mcp-server.js');
+      mcpServers['system-control'] = {
+        command,
+        args: [...extraArgs, sysFile],
+        env: {
+          MANAGEMENT_PORT: process.env.MANAGEMENT_PORT ?? '3456',
+          MANAGEMENT_API_TOKEN: process.env.MANAGEMENT_API_TOKEN ?? '',
+          SLACK_CONTEXT: JSON.stringify(slackContext),
+          SLACK_PLATFORM: 'slack',
+        },
+      };
     }
 
     const mcpToolPrefixes = this.mcpManager.getDefaultAllowedTools();
-    if (slackContext) mcpToolPrefixes.push('mcp__permission-prompt', 'mcp__slack-tools', 'mcp__slack');
+    if (slackContext) mcpToolPrefixes.push('mcp__permission-prompt', 'mcp__slack-tools', 'mcp__slack', 'mcp__system-control');
     if (slackContext && process.env.MEMORY_ENABLED === 'true') mcpToolPrefixes.push('mcp__mempalace');
     allowedTools.push(...mcpToolPrefixes);
 

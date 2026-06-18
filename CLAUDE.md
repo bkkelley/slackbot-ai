@@ -181,6 +181,10 @@ src/
 
 Discord starts only if `DISCORD_BOT_TOKEN` is set.
 
+### Natural-language control (no command needed)
+
+The `$`-commands below are fast shortcuts, but the whole system is also operable in **plain English**. The interactive Claude session is given a **`system-control` MCP server** ([slack-bot/src/system-control-mcp-server.ts](slack-bot/src/system-control-mcp-server.ts), wired in `claude-handler.ts`) that wraps the management API as tools — so messages like *"run Sage's morning nudge"*, *"what workflows do I have?"*, *"kick off the GoodRx onboarding workflow"*, *"create an agent that…"*, *"schedule the inbox processor every 15 min"*, or *"map this channel to acme"* just work. Tools cover agents (list/run/create/delete), actions, workflows (list/run/delete), schedules (list/create/enable/delete), the live queue (list/cancel), skills (list), and projects (list/map/bindings). Running a **skill** is native — the session already has the `Skill` tool. **Guardrail:** destructive/outbound tools (delete, cancel, schedule changes) are described as "confirm-first," so the model confirms with the user before calling them.
+
 ### Slack commands
 
 ```
