@@ -6,7 +6,7 @@ import { ClaudeHandler, SDKMessage } from '../claude-handler';
 import { McpManager } from './mcp-manager';
 import { SessionManager } from './session-manager';
 import { resolveProject, projectPreamble, sanitizeProject } from './channel-projects';
-import { memoryEnabled, recall, recallPreamble, remember, worthRemembering } from './supermemory';
+import { memoryEnabled, recall, recallPreamble } from './memory';
 import { TodoManager, Todo } from './todo-manager';
 import { RateLimiter } from './rate-limiter';
 import { ModelManager } from './model-manager';
@@ -233,7 +233,7 @@ export class MessageProcessor {
         : promptText;
 
       // Optional auto-recall: pull relevant long-term memory and inject it ahead of the prompt.
-      // No-ops (empty string) when Supermemory is disabled or unreachable.
+      // No-ops (empty string) when memory is disabled or not installed.
       let memoryPreamble = '';
       if (memoryEnabled() && promptText.trim()) {
         const hits = await recall(promptText);
@@ -329,13 +329,6 @@ export class MessageProcessor {
 
       if (claudeSucceeded) await this.transport.send(channelId, effectiveThreadId, '✅ *Task completed*');
       await this.updateMessageReaction(sessionKey, '✅');
-
-      // Optional auto-store: remember durable user messages for future recall (fire-and-forget).
-      // No-ops when Supermemory is disabled; Claude can also store explicitly via the Memory tool.
-      if (claudeSucceeded && memoryEnabled() && worthRemembering(promptText)) {
-        void remember(promptText, { user: userId, channel: channelId, project: project || undefined, source: 'slack' })
-          .then((saved) => { if (saved) this.logger.debug('Auto-stored message to memory'); });
-      }
 
       this.logger.info('Completed processing message', { sessionKey, messageCount: currentMessages.size });
     } catch (error: any) {

@@ -1974,12 +1974,12 @@
           <div x-show="activeGuide && activeGuide.toggle" class="mb-4 flex items-center justify-between gap-3 border border-gray-800 rounded-lg p-3 bg-gray-900/50">
             <div class="min-w-0">
               <div class="text-sm text-gray-200">Use long-term memory in the assistant</div>
-              <div class="text-xs text-gray-600 mt-0.5" x-text="supermemoryEnabled() ? 'Enabled — the bot & agents auto-recall and can store memories.' : 'Disabled — the assistant ignores memory entirely.'"></div>
+              <div class="text-xs text-gray-600 mt-0.5" x-text="memoryFeatureEnabled() ? 'Enabled — the bot & agents auto-recall and can store memories.' : 'Disabled — the assistant ignores memory entirely.'"></div>
             </div>
-            <button @click="toggleSupermemory(!supermemoryEnabled())" :disabled="togglingMemory"
+            <button @click="toggleMemory(!memoryFeatureEnabled())" :disabled="togglingMemory"
               class="px-3 py-1.5 text-sm rounded transition flex-shrink-0 disabled:opacity-50"
-              :class="supermemoryEnabled() ? 'border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600' : 'bg-indigo-600 hover:bg-indigo-500 text-white'"
-              x-text="togglingMemory ? 'Applying…' : (supermemoryEnabled() ? 'Disable' : 'Enable')"></button>
+              :class="memoryFeatureEnabled() ? 'border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600' : 'bg-indigo-600 hover:bg-indigo-500 text-white'"
+              x-text="togglingMemory ? 'Applying…' : (memoryFeatureEnabled() ? 'Disable' : 'Enable')"></button>
           </div>
 
           <ol class="space-y-3">

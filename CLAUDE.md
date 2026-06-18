@@ -457,18 +457,18 @@ If no `persona` field is set, behavior is unchanged.
 
 ---
 
-## Supermemory (optional long-term memory)
+## Long-term memory (optional, MemPalace)
 
-An **opt-in**, self-hosted memory + recall layer ([supermemory](https://github.com/supermemoryai/supermemory)). Fully offline: an Ollama chat model does fact extraction, embeddings run locally (WASM). The whole feature no-ops unless `SUPERMEMORY_ENABLED=true` — every call fails soft, so the system behaves identically when it's not installed.
+An **opt-in** local memory + recall layer ([MemPalace](https://github.com/mempalace/mempalace)). **Fully offline** — local embeddings, **no API key, no LLM**. The whole feature no-ops unless `MEMORY_ENABLED=true`; every call fails soft, so the system behaves identically when it's not installed.
 
-**Server:** the `supermemory-server` binary (`~/.supermemory/bin/`) on port **6767**, run as the `com.slackbot.supermemory` LaunchAgent. Config in `~/.supermemory/env` (Ollama via `OPENAI_BASE_URL=http://localhost:11434/v1`). API key (`sm_…`) prints on first boot.
+**How memory is populated:** `mempalace mine` indexes content into a local "palace" (`~/.mempalace/palace`). A scheduled shell job (`mempalace-mine`, hourly) mines `~/claude-workspaces` (project files, vault cards, notes) and `~/.claude/projects` (Claude session transcripts, `--mode convos`). Script: `scripts/mempalace-mine.sh` (self-gates on `MEMORY_ENABLED`).
 
 **Wiring (only when enabled):**
-- **Bot** — auto-recalls relevant memories into each prompt (`[Relevant memory]` preamble) and auto-stores durable user messages; also gets `Recall`/`Memory` MCP tools via `supermemory-mcp-server.ts`. Client: `slack-bot/src/orchestration/supermemory.ts`.
-- **Agents** — `context-assembler.ts` injects a `=== RELEVANT MEMORY ===` section. Client: `agent-runtime/src/supermemory.ts`.
-- **Onboarding** — an optional readiness check + a guided install entry in the Onboarding wizard.
+- **Bot** — auto-recalls relevant context into each prompt (`[Relevant memory]` preamble) via `mempalace search`, and gets MemPalace's tools through its native `mempalace-mcp` stdio server (registered in `claude-handler.ts`). Client: `slack-bot/src/orchestration/memory.ts`.
+- **Agents** — `context-assembler.ts` injects a `=== RELEVANT MEMORY ===` section. Client: `agent-runtime/src/memory.ts`.
+- **Onboarding** — an optional readiness check + an **Enable/Disable toggle** + a guided install entry in the Onboarding wizard (`POST /api/onboarding/memory/toggle` flips `MEMORY_ENABLED`).
 
-**Local API used:** `POST /v3/documents` (store) and `POST /v3/search` (recall — semantic search over stored content chunks). Env: `SUPERMEMORY_ENABLED`, `SUPERMEMORY_URL`, `SUPERMEMORY_API_KEY`. Install steps: SETUP.md §6d.
+**Recall path:** the clients shell out to `mempalace search "<query>" --results N` and parse the matched content (there is no REST API — MemPalace is CLI + MCP). Env: `MEMORY_ENABLED` (and optional `MEMPALACE_BIN` / `MEMPALACE_MCP_BIN`). Install steps: SETUP.md §6d.
 
 ---
 
@@ -481,7 +481,6 @@ Plist files: `~/Library/LaunchAgents/`
 | `com.slackbot.runtime` | Agent runtime daemon (always-on) — port 3457 |
 | `com.slackbot.bot` | Slack/Discord bot (always-on) — port 3458 |
 | `com.slackbot.management` | Management UI + API (always-on) — port 3456 |
-| `com.slackbot.supermemory` | Supermemory server (optional memory; only if enabled) — port 6767 |
 
 ```bash
 launchctl list | grep com.slackbot

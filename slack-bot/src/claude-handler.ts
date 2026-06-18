@@ -144,25 +144,18 @@ export class ClaudeHandler {
         mcpServers['slack'] = { type: 'http', url: process.env.SLACK_MCP_URL || 'https://mcp.slack.com/mcp' };
       }
 
-      // Supermemory: optional self-hosted long-term memory. Only wired when SUPERMEMORY_ENABLED=true;
-      // the tools (Recall/Memory) fail soft if the server is down, so it degrades gracefully.
-      if (process.env.SUPERMEMORY_ENABLED === 'true') {
-        const memFile = path.join(__dirname, isTypescript ? 'supermemory-mcp-server.ts' : 'supermemory-mcp-server.js');
-        mcpServers['supermemory'] = {
-          command,
-          args: [...extraArgs, memFile],
-          env: {
-            SUPERMEMORY_URL: process.env.SUPERMEMORY_URL ?? 'http://localhost:6767',
-            SUPERMEMORY_API_KEY: process.env.SUPERMEMORY_API_KEY ?? '',
-            SLACK_CONTEXT: JSON.stringify(slackContext),
-          },
-        };
+      // MemPalace: optional local long-term memory. Only wired when MEMORY_ENABLED=true; its native
+      // stdio MCP server (mempalace-mcp) gives the session search/knowledge-graph tools. Degrades
+      // gracefully — if the binary or palace is missing, the tools simply error and are ignored.
+      if (process.env.MEMORY_ENABLED === 'true') {
+        const memBin = process.env.MEMPALACE_MCP_BIN || `${process.env.HOME}/.local/bin/mempalace-mcp`;
+        mcpServers['mempalace'] = { command: memBin, args: [] };
       }
     }
 
     const mcpToolPrefixes = this.mcpManager.getDefaultAllowedTools();
     if (slackContext) mcpToolPrefixes.push('mcp__permission-prompt', 'mcp__slack-tools', 'mcp__slack');
-    if (slackContext && process.env.SUPERMEMORY_ENABLED === 'true') mcpToolPrefixes.push('mcp__supermemory');
+    if (slackContext && process.env.MEMORY_ENABLED === 'true') mcpToolPrefixes.push('mcp__mempalace');
     allowedTools.push(...mcpToolPrefixes);
 
     const args: string[] = [

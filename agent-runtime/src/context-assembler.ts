@@ -3,7 +3,7 @@ import * as path from 'path';
 import { AgentJob } from './types.js';
 import { Logger } from './logger.js';
 import { createRequire } from 'module';
-import { memoryEnabled, recall, buildQuery } from './supermemory.js';
+import { memoryEnabled, recall, buildQuery } from './memory.js';
 
 const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/admin`;
 const BASE_DIRECTORY = process.env.BASE_DIRECTORY || `${process.env.HOME}/claude-workspaces`;
@@ -273,12 +273,12 @@ export async function assemblePrompt(job: AgentJob, opts?: AssemblePromptOpts): 
   if (replyTextForPrompt) parts.push('', "=== USER'S REPLY ===", replyTextForPrompt);
   if (historySection) parts.push(historySection);
 
-  // Optional long-term memory recall (Supermemory). No-ops when disabled/unreachable.
+  // Optional long-term memory recall (MemPalace). No-ops when disabled/not installed.
   if (memoryEnabled()) {
     const hits = await recall(buildQuery(job));
     if (hits.length) {
       parts.push('', '=== RELEVANT MEMORY (recalled long-term context; use if relevant) ===',
-        hits.map((h) => `- ${h.content}`).join('\n'));
+        hits.map((h) => `- ${h}`).join('\n'));
     }
   }
 

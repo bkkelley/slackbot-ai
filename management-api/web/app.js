@@ -133,7 +133,7 @@ function app() {
     guide: [],                 // step-by-step wizard content (from /onboarding/guide)
     activeGuideId: '',         // currently-open integration in the wizard
     verifyingId: '',           // id being re-checked by "Verify now"
-    togglingMemory: false,     // supermemory enable/disable in flight
+    togglingMemory: false,     // memory enable/disable in flight
     copiedKey: '',             // which code block was last copied (for the ✓ flash)
     prefText: '',
     defaultPrefText: '',       // shipped default org preferences (pre-fills the textarea)
@@ -1839,16 +1839,16 @@ Evaluator must include PASS. Otherwise the candidate output is fed back to Worke
       finally { this.verifyingId = ''; }
     },
 
-    // Is the optional memory feature currently enabled? (from the supermemory status item)
-    supermemoryEnabled() {
-      const it = (this.onboarding.items || []).find((i) => i.id === 'supermemory');
+    // Is the optional memory feature currently enabled? (from the memory status item)
+    memoryFeatureEnabled() {
+      const it = (this.onboarding.items || []).find((i) => i.id === 'memory');
       return it ? !!it.enabled : false;
     },
 
-    async toggleSupermemory(enabled) {
+    async toggleMemory(enabled) {
       this.togglingMemory = true;
       try {
-        const r = await fetch('api/onboarding/supermemory/toggle', {
+        const r = await fetch('api/onboarding/memory/toggle', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ enabled }),
@@ -1857,7 +1857,7 @@ Evaluator must include PASS. Otherwise the candidate output is fed back to Worke
         if (!r.ok) { this.notify('Toggle failed: ' + (d.error || 'error')); return; }
         this.notify(enabled ? 'Memory enabled — bot + runtime restarting…' : 'Memory disabled — bot + runtime restarting…');
         // Re-check after services restart so the toggle + status reflect the new state.
-        setTimeout(() => { const g = this.guide.find((x) => x.id === 'supermemory'); if (g) this.verifyGuide(g); }, 5000);
+        setTimeout(() => { const g = this.guide.find((x) => x.id === 'memory'); if (g) this.verifyGuide(g); }, 5000);
       } catch (e) {
         this.notify('Toggle failed: ' + e.message);
       } finally {

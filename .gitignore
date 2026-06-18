@@ -51,4 +51,3 @@ channel-projects.json
 
 # machine-local scratch + logs
 .local/
-.supermemory/

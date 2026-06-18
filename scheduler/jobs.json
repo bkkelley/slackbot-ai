@@ -76,5 +76,11 @@
     "slackChannel": "D0B14GKU0LB",
     "enabled": false,
     "lastRun": null
+  },
+  {
+    "id": "mempalace-mine",
+    "cron": "0 * * * *",
+    "command": "/bin/bash $HOME/Documents/claude-workspaces/slackbot-ai/scripts/mempalace-mine.sh",
+    "enabled": true
   }
 ]

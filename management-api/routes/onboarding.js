@@ -114,22 +114,21 @@ async function checkOutlook() {
   return item('outlook', 'Outlook (Home tab inbox/calendar)', 'warn', mode || 'not reachable', 'Open Outlook (Legacy mode), sign in, and grant the macOS Automation permission');
 }
 
-// Supermemory is an OPTIONAL feature: 'ok' when off (nothing wrong) or running,
-// 'warn' only when enabled-but-unreachable (needs the server started).
-async function checkSupermemory() {
-  // Read from the .env file (not process.env) so a UI toggle is reflected without restarting this API.
-  const enabled = readEnvFlag('SUPERMEMORY_ENABLED') === 'true';
-  const url = process.env.SUPERMEMORY_URL || 'http://localhost:6767';
-  const code = await httpCode(`${url}/`);
-  const reachable = code === 200;
+// Optional memory feature (MemPalace). 'ok' when off (nothing wrong) or installed+enabled;
+// 'warn' only when enabled but the mempalace CLI isn't installed.
+const MEMPALACE_BIN = process.env.MEMPALACE_BIN || path.join(HOME, '.local', 'bin', 'mempalace');
+async function checkMemory() {
+  // Read MEMORY_ENABLED from the .env file (not process.env) so a UI toggle reflects immediately.
+  const enabled = readEnvFlag('MEMORY_ENABLED') === 'true';
+  const installed = fs.existsSync(MEMPALACE_BIN);
   if (!enabled) {
-    return { ...item('supermemory', 'Supermemory (long-term memory)', 'ok',
-      reachable ? 'disabled — optional (server is running, just not in use)' : 'disabled — optional feature',
-      'Optional. Toggle it on here once the server is installed and running.'), enabled: false, reachable };
+    return { ...item('memory', 'Long-term memory (MemPalace)', 'ok',
+      installed ? 'disabled — optional (MemPalace installed, not in use)' : 'disabled — optional feature',
+      'Optional. Install MemPalace (see steps below), then toggle it on here.'), enabled: false, installed };
   }
-  if (reachable) return { ...item('supermemory', 'Supermemory (long-term memory)', 'ok', `enabled — running at ${url}`), enabled: true, reachable };
-  return { ...item('supermemory', 'Supermemory (long-term memory)', 'warn', `enabled but not reachable at ${url}`,
-    'Start it: launchctl kickstart -k gui/$(id -u)/com.slackbot.supermemory'), enabled: true, reachable };
+  if (installed) return { ...item('memory', 'Long-term memory (MemPalace)', 'ok', 'enabled — MemPalace installed'), enabled: true, installed };
+  return { ...item('memory', 'Long-term memory (MemPalace)', 'warn', 'enabled but the mempalace CLI was not found',
+    'Install it: uv tool install mempalace  (or: pipx install mempalace)'), enabled: true, installed };
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -217,14 +216,13 @@ const GUIDE = [
     ],
   },
   {
-    id: 'supermemory', label: 'Supermemory (long-term memory)', check: 'supermemory', optional: true, toggle: true,
-    why: 'Optional self-hosted memory + recall, fully offline (Ollama for fact extraction, local embeddings). When enabled, the bot and agents auto-recall relevant facts and can store new ones with the Memory/Recall tools.',
+    id: 'memory', label: 'Long-term memory (MemPalace)', check: 'memory', optional: true, toggle: true,
+    why: 'Optional local memory + recall (github.com/mempalace/mempalace). Fully offline — local embeddings, no API key, no LLM. When enabled, the bot & agents auto-recall relevant context from your notes and past sessions, and get MemPalace search tools.',
     steps: [
-      { title: 'Install the server', body: 'Installs a single local binary to ~/.supermemory/bin (no Docker).', code: 'curl -fsSL https://supermemory.ai/install | bash' },
-      { title: 'Pull the extraction model (offline)', body: 'Any Ollama chat model works; embeddings run locally regardless.', code: 'ollama pull llama3.1:8b' },
-      { title: 'Configure for Ollama', body: 'Edit ~/.supermemory/env:', code: 'OPENAI_BASE_URL=http://localhost:11434/v1\nOPENAI_API_KEY=ollama\nOPENAI_MODEL=llama3.1:8b\nPORT=6767\nSUPERMEMORY_DATA_DIR=~/.supermemory/data' },
-      { title: 'Enable it in this system', body: 'The API key prints on first server boot (sm_…). Add to the shared .env:', code: 'SUPERMEMORY_ENABLED=true\nSUPERMEMORY_URL=http://localhost:6767\nSUPERMEMORY_API_KEY=sm_...' },
-      { title: 'Run always-on + restart consumers', body: 'Install the com.slackbot.supermemory LaunchAgent (see SETUP.md §6), then restart the bot + runtime so they pick up the env:', code: 'launchctl kickstart -k gui/$(id -u)/com.slackbot.bot\nlaunchctl kickstart -k gui/$(id -u)/com.slackbot.runtime' },
+      { title: 'Install MemPalace', body: 'A local Python CLI — no Docker, no server, no key.', code: 'uv tool install mempalace   # or: pipx install mempalace' },
+      { title: 'Index your content', body: 'First run downloads a ~300MB embedding model. Mine the workspaces and your Claude session transcripts into the palace:', code: 'mempalace mine ~/claude-workspaces\nmempalace mine ~/.claude/projects --mode convos' },
+      { title: 'Enable it here', body: 'Flip the toggle above — it sets MEMORY_ENABLED=true and restarts the bot + runtime. A scheduled job re-mines hourly so memory stays current.' },
+      { title: 'Verify', body: 'Confirm recall works offline:', code: 'mempalace search "something you indexed"' },
     ],
   },
 ];
@@ -248,7 +246,7 @@ router.get('/status', async (req, res) => {
   try {
     if (_cache.data && Date.now() - _cache.at < 20000 && !req.query.fresh) return res.json(_cache.data);
     const items = await Promise.all([
-      checkServices(), checkSlackScopes(), checkSlackMcp(), checkSalesforce(), Promise.resolve(checkDrive()), checkOutlook(), checkSupermemory(),
+      checkServices(), checkSlackScopes(), checkSlackMcp(), checkSalesforce(), Promise.resolve(checkDrive()), checkOutlook(), checkMemory(),
     ]);
     const summary = { ok: items.filter((c) => c.status === 'ok').length, warn: items.filter((c) => c.status === 'warn').length, missing: items.filter((c) => c.status === 'missing' || c.status === 'error').length, total: items.length };
     _cache = { at: Date.now(), data: { items, summary } };
@@ -260,7 +258,7 @@ router.get('/status', async (req, res) => {
 const CHECKS = {
   services: checkServices, slack_app: checkSlackScopes, slack_mcp: checkSlackMcp,
   salesforce: checkSalesforce, drive: () => Promise.resolve(checkDrive()), outlook: checkOutlook,
-  supermemory: checkSupermemory,
+  memory: checkMemory,
 };
 router.get('/status/:id', async (req, res) => {
   const fn = CHECKS[req.params.id];
@@ -268,16 +266,14 @@ router.get('/status/:id', async (req, res) => {
   try { res.json(await fn()); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /supermemory/toggle — enable/disable the optional memory feature for the assistant.
-// Flips SUPERMEMORY_ENABLED in the shared .env and restarts the bot + runtime so they pick it up.
-// (The Supermemory server itself has its own LaunchAgent; on enable we also try to (re)start it.)
-router.post('/supermemory/toggle', (req, res) => {
+// POST /memory/toggle — enable/disable the optional memory feature for the assistant.
+// Flips MEMORY_ENABLED in the shared .env and restarts the bot + runtime so they pick it up.
+router.post('/memory/toggle', (req, res) => {
   const enabled = !!(req.body && req.body.enabled);
   try {
-    setEnvFlag('SUPERMEMORY_ENABLED', enabled ? 'true' : 'false');
+    setEnvFlag('MEMORY_ENABLED', enabled ? 'true' : 'false');
     const uid = typeof process.getuid === 'function' ? process.getuid() : '';
-    const targets = ['bot', 'runtime'].concat(enabled ? ['supermemory'] : []);
-    for (const svc of targets) {
+    for (const svc of ['bot', 'runtime']) {
       sh('launchctl', ['kickstart', '-k', `gui/${uid}/com.slackbot.${svc}`]).catch(() => {});
     }
     res.json({ ok: true, enabled, note: 'Saved. Bot + runtime are restarting to apply (a few seconds).' });
