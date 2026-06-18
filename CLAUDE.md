@@ -241,10 +241,10 @@ Each project folder can carry a `~/claude-workspaces/<project>/project.json` tha
 
 ```json
 {
-  "name": "goodrx",
+  "name": "acme",
   "channels": ["C0AB…", "C0CD…"],
-  "salesforce": { "org": "ka", "accountId": "001…", "projectId": "a0X…" },
-  "drivePath": "/Users/…/Library/CloudStorage/GoogleDrive-…/My Drive/Clients/GoodRx"
+  "salesforce": { "org": "acme", "accountId": "001…", "projectId": "a0X…" },
+  "drivePath": "/Users/…/Library/CloudStorage/GoogleDrive-…/My Drive/Clients/Acme"
 }
 ```
 
@@ -376,7 +376,7 @@ steps:
     model: claude-haiku-4-5-20251001
 outputChannel:
   platform: slack
-  id: C0B46F2KJHK
+  id: C0XXXXXXXXX
 ---
 Description of what this workflow does.
 ```
@@ -482,7 +482,7 @@ launchctl bootout gui/$(id -u)/com.slackbot.<label>
 
 | Agent | File | Slack channel | Trigger |
 |---|---|---|---|
-| Sage | `admin/Agent/Sage.md` | `#sage` (`C0B46F2KJHK`) | Daily nudge (scheduler) |
+| Sage | `admin/Agent/Sage.md` | `#sage` (`C0XXXXXXXXX`) | Daily nudge (scheduler) |
 | inbox-processor | `admin/Agent/inbox-processor.md` | — | Every 15 min (shell job) |
 | Documentation Updater | `admin/Agent/Documentation Updater.md` | — | Nightly 1am UTC |
 | example-orchestrator | `admin/Agent/example-orchestrator.md` | — | On demand |

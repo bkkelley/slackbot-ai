@@ -185,6 +185,16 @@ const GUIDE = [
 // GET /guide — the step-by-step setup content for the wizard
 router.get('/guide', (_req, res) => res.json({ guide: GUIDE }));
 
+// GET /preferences/default — the starting org-wide working-preferences template
+// (shipped in templates/; the onboarding flow pre-fills it so the user can edit + save)
+const DEFAULT_PREFS_FILE = path.join(__dirname, '..', 'templates', 'default-preferences.md');
+router.get('/preferences/default', (_req, res) => {
+  try {
+    const text = fs.existsSync(DEFAULT_PREFS_FILE) ? fs.readFileSync(DEFAULT_PREFS_FILE, 'utf8') : '';
+    res.json({ text });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // GET /status — readiness of every integration (cached 20s)
 let _cache = { at: 0, data: null };
 router.get('/status', async (req, res) => {

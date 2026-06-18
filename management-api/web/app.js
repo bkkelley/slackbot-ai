@@ -135,6 +135,7 @@ function app() {
     verifyingId: '',           // id being re-checked by "Verify now"
     copiedKey: '',             // which code block was last copied (for the ✓ flash)
     prefText: '',
+    defaultPrefText: '',       // shipped default org preferences (pre-fills the textarea)
     prefScope: 'global',
     prefMsg: '',
     prefErr: false,
@@ -1781,11 +1782,16 @@ Evaluator must include PASS. Otherwise the candidate output is fed back to Worke
     async loadOnboarding(fresh) {
       this.loadingOnboarding = true;
       try {
+        const needStatics = !this.guide.length;
         const reqs = [fetch('api/onboarding/status' + (fresh ? '?fresh=1' : ''))];
-        if (!this.guide.length) reqs.push(fetch('api/onboarding/guide'));
-        const [statusR, guideR] = await Promise.all(reqs);
+        if (needStatics) reqs.push(fetch('api/onboarding/guide'), fetch('api/onboarding/preferences/default'));
+        const [statusR, guideR, defR] = await Promise.all(reqs);
         this.onboarding = await statusR.json();
         if (guideR) this.guide = (await guideR.json()).guide || [];
+        if (defR) {
+          this.defaultPrefText = (await defR.json()).text || '';
+          if (!this.prefText.trim()) this.prefText = this.defaultPrefText;  // pre-fill, editable
+        }
         if (!this.activeGuideId && this.guide.length) {
           // open the first integration that isn't ready yet (else the first one)
           const firstNotOk = this.guide.find((g) => g.check && this.guideStatus(g) !== 'ok');
@@ -1839,6 +1845,8 @@ Evaluator must include PASS. Otherwise the candidate output is fed back to Worke
         setTimeout(() => { if (this.copiedKey === key) this.copiedKey = ''; }, 1500);
       } catch (e) { /* clipboard blocked — no-op */ }
     },
+
+    resetPrefsToDefault() { this.prefText = this.defaultPrefText; this.prefMsg = ''; this.prefErr = false; },
 
     async savePreference() {
       this.prefMsg = ''; this.prefErr = false;

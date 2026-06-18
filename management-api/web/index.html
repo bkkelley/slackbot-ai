@@ -2002,15 +2002,16 @@
     <!-- 2 · Organizational preferences -->
     <div>
       <h3 class="text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">2 · Organizational preferences</h3>
-      <p class="text-xs text-gray-600 mb-2">Tell the bot how you like to work — saved to a <span class="font-mono">CLAUDE.md</span> it reads every session.</p>
+      <p class="text-xs text-gray-600 mb-2">How the bot works for your org — saved to a <span class="font-mono">CLAUDE.md</span> it reads every session. We've pre-filled sensible defaults (Slack Lists for tasks, Canvases for docs, project Drive folders, read-only Salesforce). <span class="text-gray-400">Edit them to match your team</span>, then Save.</p>
       <div class="space-y-2">
         <select x-model="prefScope" class="bg-gray-900 border border-gray-800 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-indigo-500">
           <option value="global">Global (all sessions)</option>
           <template x-for="p in projects" :key="p.name"><option :value="p.name" x-text="'Project: ' + p.name"></option></template>
         </select>
-        <textarea x-model="prefText" rows="3" placeholder="e.g. Track tasks as markdown files in tasks/. Summarize client meetings into notes/. Never modify the sales channel." class="w-full bg-gray-900 border border-gray-800 rounded px-2 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-indigo-500"></textarea>
+        <textarea x-model="prefText" rows="12" placeholder="e.g. Track tasks as markdown files in tasks/. Summarize client meetings into notes/. Never modify the sales channel." class="w-full bg-gray-900 border border-gray-800 rounded px-2 py-1.5 text-sm text-gray-300 font-mono focus:outline-none focus:border-indigo-500"></textarea>
         <div class="flex items-center gap-2">
           <button @click="savePreference()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded transition">Save preference</button>
+          <button @click="resetPrefsToDefault()" x-show="defaultPrefText && prefText !== defaultPrefText" class="px-3 py-1.5 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-700 text-sm rounded transition">Reset to defaults</button>
           <span x-show="prefMsg" class="text-xs break-all" :class="prefErr ? 'text-red-400' : 'text-green-400'" x-text="prefMsg"></span>
         </div>
       </div>
