@@ -5,7 +5,7 @@ import { ChannelTransport, ChannelFormatter, IncomingMessage } from './types';
 import { ClaudeHandler, SDKMessage } from '../claude-handler';
 import { McpManager } from './mcp-manager';
 import { SessionManager } from './session-manager';
-import { resolveProject, projectPreamble, sanitizeProject } from './channel-projects';
+import { resolveProject, projectPreamble, sanitizeProject, detectProjectInText } from './channel-projects';
 import { memoryEnabled, recall, recallPreamble } from './memory';
 import { TodoManager, Todo } from './todo-manager';
 import { RateLimiter } from './rate-limiter';
@@ -194,6 +194,14 @@ export class MessageProcessor {
             await this.transport.send(channelId, effectiveThreadId, `📁 Scoped this thread to *${proj}*.`);
             return;
           }
+        }
+      } else {
+        // No explicit `project:` prefix — auto-scope if a known client name is mentioned.
+        // Whole-word match; switches (and announces) only when it differs from the current scope.
+        const detected = detectProjectInText(promptText);
+        if (detected && this.threadProjects.get(threadKey) !== detected) {
+          this.threadProjects.set(threadKey, detected);
+          await this.transport.send(channelId, effectiveThreadId, `📁 Working on *${detected}* (say "project: <name>" to switch).`);
         }
       }
     }

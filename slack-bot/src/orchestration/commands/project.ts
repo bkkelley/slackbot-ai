@@ -10,6 +10,7 @@ import {
   addChannelToManifest,
   setSalesforce,
   setDrivePath,
+  setAliases,
   isSalesforceId,
 } from '../channel-projects';
 
@@ -24,6 +25,7 @@ import {
  *   $project list                     list known project folders
  *   $project sf <org> <acctId> <projId>   bind the Salesforce org + Account + Project__c
  *   $project drive <absolute path>    bind the Google Drive folder (local synced path)
+ *   $project alias <names>            extra names that auto-scope a DM to this project
  */
 export class ProjectCommand {
   async handle(ctx: CommandContext): Promise<boolean> {
@@ -134,6 +136,30 @@ export class ProjectCommand {
       return true;
     }
 
+    // $project alias [<comma-separated names>]
+    if (/^alias(\s|$)/i.test(arg)) {
+      const proj = currentProject();
+      if (!proj) {
+        await reply('Map this channel to a project first: `$project map <name>`.');
+        return true;
+      }
+      const rest = arg.replace(/^alias\s*/i, '').trim();
+      if (!rest) {
+        const m = loadManifest(proj);
+        await reply(`Aliases for *${proj}*: ${m.aliases && m.aliases.length ? m.aliases.map((a) => `\`${a}\``).join(', ') : '_none_'}\nSet with \`$project alias grx, good rx\` — mentioning any of these in a DM auto-scopes to *${proj}*.`);
+        return true;
+      }
+      const aliases = rest.split(',').map((a) => a.trim()).filter(Boolean);
+      try {
+        setAliases(proj, aliases);
+      } catch (err) {
+        await reply(`⚠️ Couldn't save (${String(err).slice(0, 120)}).`);
+        return true;
+      }
+      await reply(`✅ *${proj}* aliases: ${aliases.map((a) => `\`${a}\``).join(', ')}\nMention any of these in a DM and I'll scope to *${proj}*.`);
+      return true;
+    }
+
     // $project (show)
     const proj = currentProject();
     if (proj) {
@@ -145,10 +171,11 @@ export class ProjectCommand {
         lines.push('Salesforce: _not bound_ — `$project sf <org> <accountId> <projectId>`');
       }
       lines.push(m.drivePath ? `Drive: \`${m.drivePath}\`` : 'Drive: _not bound_ — `$project drive <path>`');
+      lines.push(m.aliases && m.aliases.length ? `Aliases: ${m.aliases.map((a) => `\`${a}\``).join(', ')}` : 'Aliases: _none_ — `$project alias <names>` (auto-scope DMs)');
       if (m.channels && m.channels.length) lines.push(`Channels: ${m.channels.map((c) => `<#${c}>`).join(' ')}`);
       await reply(lines.join('\n'));
     } else if (isDM) {
-      await reply('This DM uses the *general* workspace. Start a message with `project: <name>` to scope a thread.');
+      await reply('This DM uses the *general* workspace. Just mention a client name and I\'ll scope to it, or start a message with `project: <name>`.');
     } else {
       await reply('This channel isn’t mapped — it uses the *general* workspace.\nMap it with `$project map <name>` (or via the App Home tab), then bind `$project sf …` and `$project drive …`.');
     }

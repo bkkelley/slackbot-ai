@@ -82,6 +82,7 @@ export interface ProjectManifest {
   channels?: string[];
   salesforce?: { org?: string; accountId?: string; projectId?: string };
   drivePath?: string;
+  aliases?: string[]; // extra names that should auto-scope a DM to this project (e.g. "grx", "good rx")
 }
 
 function manifestPath(project: string): string {
@@ -124,9 +125,61 @@ export function setDrivePath(project: string, drivePath: string): void {
   saveManifest(project, m);
 }
 
+export function setAliases(project: string, aliases: string[]): void {
+  const m = loadManifest(project);
+  m.name = m.name || project;
+  m.aliases = aliases.map((a) => a.trim()).filter(Boolean);
+  saveManifest(project, m);
+}
+
 /** A Salesforce 15- or 18-char record id (alphanumeric). */
 export function isSalesforceId(v: string): boolean {
   return /^[a-zA-Z0-9]{15}([a-zA-Z0-9]{3})?$/.test((v || '').trim());
+}
+
+// ── Auto-detecting a client name in free-text (DM convenience) ───────────────────────────────────
+// Reserved workspace names that are never "clients" and must not auto-scope.
+const RESERVED_PROJECTS = new Set(['general', 'admin', 'node_modules']);
+
+/** Known projects = channel-mapped names + workspace dirs that carry a project.json. */
+export function listKnownProjects(): Array<{ name: string; aliases: string[] }> {
+  const names = new Set<string>();
+  for (const p of Object.values(loadChannelProjects())) {
+    if (p && !p.startsWith('/') && !RESERVED_PROJECTS.has(p)) names.add(p);
+  }
+  try {
+    for (const d of fs.readdirSync(BASE_DIRECTORY, { withFileTypes: true })) {
+      if (!d.isDirectory() || d.name.startsWith('.') || RESERVED_PROJECTS.has(d.name)) continue;
+      if (fs.existsSync(path.join(BASE_DIRECTORY, d.name, 'project.json'))) names.add(d.name);
+    }
+  } catch { /* base dir missing — no projects */ }
+  return [...names].map((name) => {
+    const m = loadManifest(name);
+    return { name, aliases: Array.isArray(m.aliases) ? m.aliases : [] };
+  });
+}
+
+/**
+ * Find a known project/client named in free text (DM auto-scope). Whole-word, case-insensitive,
+ * longest match wins. Candidates shorter than 3 chars are ignored to avoid false positives.
+ * Returns the project name, or null if none is clearly mentioned (caller then keeps current scope).
+ */
+export function detectProjectInText(text: string): string | null {
+  const hay = (text || '').toLowerCase();
+  if (!hay.trim()) return null;
+  let best: { name: string; len: number } | null = null;
+  for (const { name, aliases } of listKnownProjects()) {
+    for (const cand of [name, ...aliases]) {
+      const c = (cand || '').toLowerCase().trim();
+      if (c.length < 3 || RESERVED_PROJECTS.has(c)) continue;
+      const esc = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // bounded by string edge or a non-alphanumeric char (so "goodrx's" / "goodrx," match)
+      if (new RegExp(`(^|[^a-z0-9])${esc}([^a-z0-9]|$)`, 'i').test(hay)) {
+        if (!best || c.length > best.len) best = { name, len: c.length };
+      }
+    }
+  }
+  return best ? best.name : null;
 }
 
 /** Context note prepended to the prompt when a project is active. Includes manifest bindings. */

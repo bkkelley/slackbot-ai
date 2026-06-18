@@ -25,7 +25,8 @@ const HELP_TEXT = `*Commands*
 \`$project list\` — list known projects
 \`$project sf <org> <AccountId> <Project__cId>\` — bind the Salesforce org + records
 \`$project drive <absolute path>\` — bind the Google Drive folder
-_In a DM, start a message with \`project: <name>\` to scope a thread._
+\`$project alias <names>\` — extra names that auto-scope a DM to this project
+_In a DM, just mention a client name to scope to it (or start with \`project: <name>\`)._
 
 *MCP*
 \`mcp\` — list configured MCP servers
