@@ -167,13 +167,16 @@ export class Scheduler {
     logger.info('Job due', { id: template.id, agent: template.agent, command: template.command });
 
     if (template.command) {
-      const [command, ...args] = template.command.trim().split(/\s+/);
+      const command = template.command.trim();
       if (!command) {
         logger.warn('Command template is empty', { id: template.id });
         return;
       }
-      const child = spawn(command, args, {
-        shell: false,
+      // Run the command string through a shell so $HOME and other env vars expand. The previous
+      // shell:false + whitespace-split passed "$HOME/..." to bash literally, so every job that used
+      // $HOME failed with ENOENT. jobs.json is admin-authored/trusted, so shell interpretation is fine.
+      const child = spawn(command, {
+        shell: true,
         env: process.env,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
