@@ -33,12 +33,12 @@ When a job has a scope, the runtime resolves all resources project-first, fallin
 | Persona | `<workspace>/.agents/personas/<Name>.md` | `~/.agents/personas/<Name>.md` |
 | Skill | `<workspace>/.claude/skills/<name>/SKILL.md` | `~/.claude/skills/<name>/SKILL.md` |
 | Agent skill | `<workspace>/.claude/agents/<Agent>/skills/<name>/SKILL.md` | `~/.claude/agents/<Agent>/skills/<name>/SKILL.md` |
-| Workflow | `<workspace>/.agents/workflows/<Name>.md` | `admin/_workflows/` |
+| Workflow | `<workspace>/.agents/workflows/<Name>.md` | `global/_workflows/` |
 | MCP servers | `<workspace>/.claude/settings.json` (merges with global) | `~/.claude/settings.json` |
 
 **Scope inheritance:** child jobs spawned via `RunSkill`, `RunWorkflow`, or `SpawnAgent` automatically inherit the parent job's scope.
 
-Agent resolution reads `<workspace>/.claude/agents/<Name>.md` first, then legacy `<workspace>/.agents/<Name>.md`, then global `~/.claude/agents/<Name>.md`, then legacy `admin/Agent/<Name>.md`. Skill resolution has three layers: agent-specific first, then workspace-specific, then global. Legacy project skills under `<workspace>/.agents/skills/<name>/SKILL.md` are still read as a compatibility fallback, but new workspace skills are written to `<workspace>/.claude/skills/<name>/SKILL.md`.
+Agent resolution reads `<workspace>/.claude/agents/<Name>.md` first, then legacy `<workspace>/.agents/<Name>.md`, then global `~/.claude/agents/<Name>.md`, then legacy `global/Agent/<Name>.md`. Skill resolution has three layers: agent-specific first, then workspace-specific, then global. Legacy project skills under `<workspace>/.agents/skills/<name>/SKILL.md` are still read as a compatibility fallback, but new workspace skills are written to `<workspace>/.claude/skills/<name>/SKILL.md`.
 
 ---
 
@@ -73,7 +73,7 @@ To add project-scoped MCP servers (e.g. Supabase, Vercel), create `<workspace>/.
 | Tool | What it does |
 |---|---|
 | `PostMessage` | Posts to the job's output channel (Slack/Discord) |
-| `WriteCard` | Writes a markdown card to `admin/Card/` |
+| `WriteCard` | Writes a markdown card to `global/Card/` |
 | `UpdateCard` | Updates an existing card by cardId |
 | `SpawnAgent` | Spawns a child job (sync runs inline; async queues normally) |
 | `WaitForJob` | Blocks until an async job completes (max 600s) |
@@ -152,7 +152,7 @@ steps:
 ```
 
 A full checked-in example lives at `agent-runtime/examples/workflows/AdaptiveReviewLoop.md`.
-Copy it into `admin/_workflows/AdaptiveReviewLoop.md` for a global workflow, or into `<workspace>/.agents/workflows/AdaptiveReviewLoop.md` for a project-scoped workflow.
+Copy it into `global/_workflows/AdaptiveReviewLoop.md` for a global workflow, or into `<workspace>/.agents/workflows/AdaptiveReviewLoop.md` for a project-scoped workflow.
 
 When the reviewer output does not include `APPROVED`, the runtime marks the review step failed, feeds that output into the next Builder visit as workflow context, and jumps back to step 1 until the review passes or `maxVisits` is exceeded.
 

@@ -126,7 +126,7 @@ All endpoints require `X-Bot-Auth: <BOT_RUNTIME_SHARED_SECRET>` header.
 | Tool | What it does |
 |------|-------------|
 | `PostMessage` | Posts a message to the job's output channel via bot transport-proxy |
-| `WriteCard` | Writes a markdown card to `admin/Card/`, records cardId in SQLite |
+| `WriteCard` | Writes a markdown card to `global/Card/`, records cardId in SQLite |
 | `UpdateCard` | Updates an existing card by cardId |
 | `SpawnAgent` | Spawns a child job (sync runs inline; async queues normally) |
 | `WaitForJob` | Blocks until a job completes (max 600s, with priority boost for children) |

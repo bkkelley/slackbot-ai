@@ -64,13 +64,13 @@ src/
 | Tool | What it does |
 |------|-------------|
 | `PostMessage` | Posts a message to the job's output channel (Slack/Discord) |
-| `WriteCard` | Writes a markdown card to `admin/Card/` |
+| `WriteCard` | Writes a markdown card to `global/Card/` |
 | `UpdateCard` | Updates an existing card by cardId |
 | `SpawnAgent` | Spawns a child job (sync runs inline; async queues normally) |
 | `WaitForJob` | Blocks until an async job completes (max 600s) |
 | `GetJobStatus` | Returns current status of any job |
 | `RunSkill` | Runs a Claude Code skill by name (`~/.claude/commands/<skill>.md`) as a child job |
-| `RunWorkflow` | Runs a named workflow from `admin/_workflows/<Name>.md` (sequential steps) |
+| `RunWorkflow` | Runs a named workflow from `global/_workflows/<Name>.md` (sequential steps) |
 
 ### RunSkill
 
@@ -343,7 +343,7 @@ The runtime hot-reloads `jobs.json` every 60s. Two job types coexist:
 | `extract-projects` | `0 11 * * *` | Shell | Extracts projects → `projects-files.json` |
 | `extract-sources` | `0 11 * * *` | Shell | Extracts sources → `sources-files.json` |
 | `extract-tags` | `0 11 * * *` | Shell | Extracts tags → `tags-files.json` |
-| `obsidian-backup` | `0 0 * * *` | Shell | Git backup of `admin/` |
+| `obsidian-backup` | `0 0 * * *` | Shell | Git backup of `global/` |
 | `documentation-updater-nightly` | `0 1 * * *` | Agent | Documentation Updater "Nightly Scan" |
 
 ---
@@ -353,10 +353,10 @@ The runtime hot-reloads `jobs.json` every 60s. Two job types coexist:
 Named, declarative sequences of steps. Each step's output is passed to the next as `=== PRIOR STEP OUTPUT ===` context.
 
 **Scope:**
-- Global: `admin/_workflows/<Name>.md`
+- Global: `global/_workflows/<Name>.md`
 - Project: `<workspace>/.agents/workflows/<Name>.md`
 
-**File format** (`admin/_workflows/<Name>.md` or `<workspace>/.agents/workflows/<Name>.md`):
+**File format** (`global/_workflows/<Name>.md` or `<workspace>/.agents/workflows/<Name>.md`):
 ```yaml
 ---
 name: Morning Routine
@@ -426,7 +426,7 @@ Named sets of tools available to agents. Executor reads this file per job; falls
 | `web` | Web research agents |
 | `code` | Code-focused agents with file write access |
 
-Set per-agent in `admin/Agent/<Name>.md` frontmatter (`toolset: extended`) or per-job in the API request.
+Set per-agent in `global/Agent/<Name>.md` frontmatter (`toolset: extended`) or per-job in the API request.
 
 To add a new toolset: edit `toolsets.json` — no code change or restart required.
 
@@ -437,7 +437,7 @@ To add a new toolset: edit `toolsets.json` — no code change or restart require
 Reusable voice/tone/constraint definitions that compose into agents. Injected into the prompt before the agent's own instructions.
 
 **Scope:**
-- Global: `admin/_personas/<Name>.md`
+- Global: `global/_personas/<Name>.md`
 - Project: `<workspace>/.agents/personas/<Name>.md`
 
 To use: add `persona: [[PersonaName]]` to an agent's frontmatter. The context assembler reads the persona file and injects it as a `=== PERSONA ===` section.
@@ -457,7 +457,7 @@ If no `persona` field is set, behavior is unchanged.
 | `scaffold.js` | `createAgent`, `deleteAgent` | slack-bot, management-api |
 | `config.js` | `vaultPath`, `claudePath`, `baseDirectory`, `schedulerDir` | vault.js, scaffold.js |
 
-`vault.js` is scope-aware: all functions accept an optional `scope` parameter (workspace name). `listAgents()` scans both `admin/Agent/` and all `<workspace>/.agents/` directories.
+`vault.js` is scope-aware: all functions accept an optional `scope` parameter (workspace name). `listAgents()` scans both `global/Agent/` and all `<workspace>/.agents/` directories.
 
 ---
 
@@ -501,10 +501,10 @@ launchctl bootout gui/$(id -u)/com.slackbot.<label>
 
 | Agent | File | Slack channel | Trigger |
 |---|---|---|---|
-| Sage | `admin/Agent/Sage.md` | `#sage` (`C0XXXXXXXXX`) | Daily nudge (scheduler) |
-| inbox-processor | `admin/Agent/inbox-processor.md` | — | Every 15 min (shell job) |
-| Documentation Updater | `admin/Agent/Documentation Updater.md` | — | Nightly 1am UTC |
-| example-orchestrator | `admin/Agent/example-orchestrator.md` | — | On demand |
+| Sage | `global/Agent/Sage.md` | `#sage` (`C0XXXXXXXXX`) | Daily nudge (scheduler) |
+| inbox-processor | `global/Agent/inbox-processor.md` | — | Every 15 min (shell job) |
+| Documentation Updater | `global/Agent/Documentation Updater.md` | — | Nightly 1am UTC |
+| example-orchestrator | `global/Agent/example-orchestrator.md` | — | On demand |
 
 ---
 
@@ -514,7 +514,7 @@ Agents come in two scopes: **global** (vault-backed, long-lived) and **project**
 
 ### Global agents
 
-- `admin/Agent/<Name>.md` — vault file with frontmatter (`status`, `model`, `cadence`, `last-session`) + full instructions
+- `global/Agent/<Name>.md` — vault file with frontmatter (`status`, `model`, `cadence`, `last-session`) + full instructions
 - `claude-workspaces/<name>/CLAUDE.md` — Claude's entry point (one-liner pointer or full inline)
 - `claude-workspaces/<name>/.claude/settings.json` — tool permissions
 
@@ -524,7 +524,7 @@ Agents come in two scopes: **global** (vault-backed, long-lived) and **project**
 
 | File | Purpose |
 |---|---|
-| `admin/Agent/<Name>.md` | Vault file with frontmatter shell |
+| `global/Agent/<Name>.md` | Vault file with frontmatter shell |
 | `claude-workspaces/<name>/CLAUDE.md` | One-liner pointer to vault file |
 | `claude-workspaces/<name>/.claude/settings.json` | Default tool permissions |
 
@@ -556,7 +556,7 @@ curl -s -X POST http://127.0.0.1:3457/api/jobs \
 
 **Personas:** Set `persona: "[[PersonaName]]"` in frontmatter. Context assembler resolves from project scope first, then global.
 
-**Action templates:** Define the prompt shape for each action. Global: `admin/_agent_actions/<AgentName> - <Action>.md`. Project: `<workspace>/.agents/actions/<AgentName> - <Action>.md`.
+**Action templates:** Define the prompt shape for each action. Global: `global/_agent_actions/<AgentName> - <Action>.md`. Project: `<workspace>/.agents/actions/<AgentName> - <Action>.md`.
 
 **Skills:** Agents can call `RunSkill({ skill: "skill-name" })` to execute any installed Claude Code skill mid-execution.
 
