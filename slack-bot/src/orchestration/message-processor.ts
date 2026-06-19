@@ -27,6 +27,27 @@ import { Logger } from '../logger';
 const HTML_OUTPUTS_DIR = `${process.env.HOME}/server/html-outputs`;
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:3456';
 
+// The conversational onboarding engine is a project skill of THIS system repo (not a global skill),
+// at <repo>/.claude/skills/onboard/SKILL.md. The bot's session runs in other workspaces, so we don't
+// rely on Skill-tool discovery — we read the skill text and inject it as the prompt for `$onboard`.
+let _onboardSkill: string | null = null;
+function onboardPrompt(): string {
+  if (_onboardSkill === null) {
+    try {
+      _onboardSkill = fs.readFileSync(path.resolve(__dirname, '../../../.claude/skills/onboard/SKILL.md'), 'utf8');
+    } catch {
+      _onboardSkill = '';
+    }
+  }
+  if (_onboardSkill) {
+    return `You are running this onboarding skill for the user — follow it exactly.\n\n${_onboardSkill}\n\nBegin now: greet briefly and address the first thing that needs attention.`;
+  }
+  // Fallback if the skill file can't be read.
+  return 'Act as an interactive setup guide: read the live onboarding status at ' +
+    'http://127.0.0.1:3456/agents/api/onboarding/status?fresh=1 and the steps at /guide, then walk me ' +
+    'through the next incomplete integration one step at a time, verifying each via /status/<id> before advancing.';
+}
+
 export class MessageProcessor {
   private activeControllers: Map<string, AbortController> = new Map();
   private logger = new Logger('MessageProcessor');
@@ -191,11 +212,7 @@ export class MessageProcessor {
       /^\$onboard\s*$/i.test(promptText.trim()) ||
       /^(onboard me|help me (set ?up|onboard)|walk me through (the )?set ?up)\b/i.test(promptText.trim());
     if (isOnboard) {
-      promptText =
-        'Run the `onboard` skill (via the Skill tool) and act as the interactive setup guide it ' +
-        'describes: read the live onboarding status, then walk me through the next incomplete step ' +
-        'conversationally — one step at a time, verifying each before moving on. Start now with a ' +
-        'short greeting and the first thing that needs attention.';
+      promptText = onboardPrompt();
     }
 
     if (!isOnboard && isDM && promptText) {

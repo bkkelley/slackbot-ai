@@ -45,15 +45,6 @@ mkdir -p "$HOME/claude-workspaces/global/Agent" \
          "$REPO_ROOT/agent-runtime/data"
 ok "directories ready"
 
-# Symlink repo-vendored Claude Code skills into ~/.claude/skills so they're runnable directly
-# from Claude Code and discoverable by the bot's interactive session.
-mkdir -p "$HOME/.claude/skills"
-for skill in "$REPO_ROOT"/skills/*/; do
-  [ -d "$skill" ] || continue
-  ln -sfn "${skill%/}" "$HOME/.claude/skills/$(basename "$skill")"
-done
-ok "skills symlinked into ~/.claude/skills"
-
 # ── 3. Shared .env (scaffold if missing) + symlinks ───────────────────────────
 if [ ! -f "$REPO_ROOT/.env" ]; then
   say "Scaffolding .env (placeholder Slack tokens + generated secret)…"
