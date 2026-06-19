@@ -136,35 +136,8 @@ router.get('/:name/overview', (req, res) => {
     // Workspace
     const workspacePath = safeJoin(baseDirectory, name.toLowerCase());
 
-    // Recent log cards — filename prefix: "<Name> - "
-    const cardDir = path.join(vaultPath, 'Card');
-    const recentCards = [];
-    if (fs.existsSync(cardDir)) {
-      const prefix = `${name} - `;
-      const files = fs.readdirSync(cardDir)
-        .filter(f => f.startsWith(prefix) && f.endsWith('.md'))
-        .sort().reverse().slice(0, 5);
-      for (const filename of files) {
-        try {
-          const content = fs.readFileSync(path.join(cardDir, filename), 'utf8');
-          const fm = parseFrontmatter(content);
-          const parts = filename.replace('.md', '').split(' - ');
-          const action = parts.slice(1, -1).join(' - ');
-          const date = parts[parts.length - 1];
-          recentCards.push({
-            filename,
-            action,
-            date,
-            summary: fm['summary'] || fm['body'] || null,
-            slackTs: fm['slack-ts'] ? fm['slack-ts'].replace(/"/g, '') : null,
-          });
-        } catch {}
-      }
-    }
-
     res.json({
       workspace: { path: workspacePath, exists: fs.existsSync(workspacePath) },
-      recentCards,
     });
   } catch (err) {
     handleHttpError(res, err);

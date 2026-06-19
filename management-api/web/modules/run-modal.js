@@ -262,7 +262,7 @@ window.AppModules.runModal = {
     formatToolLine(tool, input) {
       if (!tool) return null;
       const icons = {
-        PostMessage: '📨', WriteCard: '📝', UpdateCard: '📝',
+        PostMessage: '📨',
         SpawnAgent: '🤖', WaitForJob: '⏳', GetJobStatus: '📊',
       };
       const icon = icons[tool] || '🔧';
@@ -271,10 +271,6 @@ window.AppModules.runModal = {
       }
       if (tool === 'SpawnAgent' && input?.agent) {
         return `${icon} SpawnAgent: ${input.agent} / ${input.action || '?'}`;
-      }
-      if ((tool === 'WriteCard' || tool === 'UpdateCard') && input?.yaml) {
-        const titleMatch = String(input.yaml).match(/^title:\s*(.+)/m);
-        return `${icon} ${tool}: ${titleMatch ? titleMatch[1] : 'card'}`;
       }
       return `${icon} ${tool}`;
     },

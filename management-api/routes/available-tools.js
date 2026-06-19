@@ -41,8 +41,6 @@ const SDK_TOOLS = [
 
 const AGENT_RUNTIME_TOOLS = [
   { name: 'PostMessage',   description: 'Post a message to the job\'s Slack or Discord output channel', file: 'post-message.ts' },
-  { name: 'WriteCard',     description: 'Write a markdown card to admin/Card/', file: 'write-card.ts' },
-  { name: 'UpdateCard',    description: 'Update an existing card by cardId', file: 'update-card.ts' },
   { name: 'SpawnAgent',    description: 'Spawn a child agent job (sync runs inline, async queues normally)', file: 'spawn-agent.ts' },
   { name: 'WaitForJob',    description: 'Block until an async job completes (max 600s)', file: 'wait-for-job.ts' },
   { name: 'GetJobStatus',  description: 'Return the current status of any job by ID', file: 'get-job-status.ts' },

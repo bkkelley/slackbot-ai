@@ -97,40 +97,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       },
     },
     {
-      name: 'WriteCard',
-      description: 'Write an agent log card to the vault',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          yaml: {
-            type: 'string',
-            description: 'YAML frontmatter fields for the card',
-          },
-          content: {
-            type: 'string',
-            description: 'Markdown body of the card (optional)',
-          },
-        },
-        required: ['yaml'],
-      },
-    },
-    {
-      name: 'UpdateCard',
-      description: 'Update a card previously written this run',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          cardId: {
-            type: 'string',
-            description: 'Card ID returned by WriteCard',
-          },
-          yaml: { type: 'string', description: 'Updated YAML frontmatter' },
-          content: { type: 'string', description: 'Updated body (optional)' },
-        },
-        required: ['cardId', 'yaml'],
-      },
-    },
-    {
       name: 'SpawnAgent',
       description: 'Spawn a child agent job',
       inputSchema: {
@@ -360,10 +326,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   switch (name) {
     case 'PostMessage':
       return callIpc('PostMessage', args);
-    case 'WriteCard':
-      return callIpc('WriteCard', args);
-    case 'UpdateCard':
-      return callIpc('UpdateCard', args);
     case 'SpawnAgent':
       return callIpc('SpawnAgent', args);
     case 'WaitForJob':

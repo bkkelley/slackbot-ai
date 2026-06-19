@@ -25,11 +25,11 @@ const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspa
 const BASE_DIRECTORY = process.env.BASE_DIRECTORY || `${process.env.HOME}/claude-workspaces`;
 const TOOLSETS_PATH = path.join(path.dirname(path.dirname(new URL(import.meta.url).pathname)), 'toolsets.json');
 const FALLBACK_TOOLSETS: Record<string, string> = {
-  'vault-readonly': 'Read,Grep,Glob,PostMessage,WriteCard,GetJobStatus',
-  default: 'Read,Grep,Glob,WebSearch,PostMessage,WriteCard,UpdateCard,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow',
-  extended: 'Read,Grep,Glob,WebSearch,Write,Edit,Bash,PostMessage,WriteCard,UpdateCard,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow',
-  web: 'Read,Grep,Glob,WebSearch,WebFetch,PostMessage,WriteCard,GetJobStatus',
-  code: 'Read,Grep,Glob,Write,Edit,Bash,PostMessage,WriteCard,GetJobStatus',
+  'vault-readonly': 'Read,Grep,Glob,PostMessage,GetJobStatus',
+  default: 'Read,Grep,Glob,WebSearch,PostMessage,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow',
+  extended: 'Read,Grep,Glob,WebSearch,Write,Edit,Bash,PostMessage,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow',
+  web: 'Read,Grep,Glob,WebSearch,WebFetch,PostMessage,GetJobStatus',
+  code: 'Read,Grep,Glob,Write,Edit,Bash,PostMessage,GetJobStatus',
 };
 
 function optionalSafe(value: unknown, label: string): string | undefined {

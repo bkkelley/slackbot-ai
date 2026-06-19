@@ -245,10 +245,6 @@ window.AppModules.ask = {
       if (!tool) return null;
       if (tool === 'PostMessage' && input?.text) return `Reply prepared: ${String(input.text).slice(0, 120)}`;
       if (tool === 'SpawnAgent' && input?.agent) return `Spawned ${input.agent} / ${input.action || '?'}`;
-      if ((tool === 'WriteCard' || tool === 'UpdateCard') && input?.yaml) {
-        const titleMatch = String(input.yaml).match(/^title:\s*(.+)/m);
-        return `${tool}: ${titleMatch ? titleMatch[1] : 'card'}`;
-      }
       if (tool === 'GetJobStatus' && input?.jobId) return `Checked job ${input.jobId}`;
       if (tool === 'WaitForJob' && input?.jobId) return `Waited for job ${input.jobId}`;
       return tool;

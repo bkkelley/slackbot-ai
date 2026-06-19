@@ -1,64 +1,51 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const { vaultPath } = require('../../shared/config');
 
 const router = express.Router();
 
-function parseFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return {};
-  const fm = {};
-  for (const line of match[1].split('\n')) {
-    const colonIdx = line.indexOf(':');
-    if (colonIdx === -1) continue;
-    const key = line.slice(0, colonIdx).trim();
-    const val = line.slice(colonIdx + 1).trim().replace(/^["']|["']$/g, '');
-    if (key) fm[key] = val;
-  }
-  return fm;
+const RUNTIME_API_URL = `http://127.0.0.1:${process.env.RUNTIME_HTTP_PORT || '3457'}`;
+const BOT_RUNTIME_SHARED_SECRET = process.env.BOT_RUNTIME_SHARED_SECRET || '';
+
+function runtimeHeaders() {
+  return { 'Content-Type': 'application/json', 'X-Bot-Auth': BOT_RUNTIME_SHARED_SECRET };
+}
+
+function summarize(job) {
+  const r = job.result || {};
+  if (r.ok === false && r.error) return r.error;
+  const text = (r.textOutput || '').trim();
+  if (!text) return null;
+  return text.length > 240 ? text.slice(0, 240) + '…' : text;
 }
 
 // GET /agents/api/activity?limit=50
-router.get('/', (req, res) => {
+// Recent activity = jobs the runtime has run (replaces the old vault-card feed).
+router.get('/', async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit || '50', 10);
-    const cardDir = path.join(vaultPath, 'Card');
-    if (!fs.existsSync(cardDir)) return res.json([]);
+    const limit = req.query.limit || '50';
+    const qs = new URLSearchParams({ limit });
+    const r = await fetch(`${RUNTIME_API_URL}/api/jobs?${qs}`, { headers: runtimeHeaders() });
+    if (!r.ok) return res.status(r.status).json([]);
+    const data = await r.json();
+    const jobs = Array.isArray(data) ? data : data.jobs || [];
 
-    const results = [];
-    for (const filename of fs.readdirSync(cardDir)) {
-      if (!filename.endsWith('.md')) continue;
-      const filePath = path.join(cardDir, filename);
-      let content;
-      try { content = fs.readFileSync(filePath, 'utf8'); } catch { continue; }
-      const fm = parseFrontmatter(content);
-      if (fm['card-type'] !== 'Agent Log') continue;
+    const results = jobs.map((job) => ({
+      id: job.id,
+      agent: job.agent || '',
+      action: job.action || '',
+      status: job.status,
+      ok: job.result ? job.result.ok !== false : job.status !== 'failed',
+      date: job.completedAt || job.startedAt || job.createdAt || null,
+      mtime: job.completedAt || job.startedAt || job.createdAt || null,
+      summary: summarize(job),
+      durationMs: job.result?.durationMs ?? null,
+      costUsd: job.result?.totalCostUsd ?? null,
+      model: job.result?.model ?? null,
+    }));
 
-      const mtime = fs.statSync(filePath).mtime;
-      // Parse filename: "<Agent> - <Action> - <date> <time>.md"
-      const base = filename.replace('.md', '');
-      const parts = base.split(' - ');
-      const agent = parts[0] || '';
-      const dateTime = parts[parts.length - 1] || '';
-      const action = parts.slice(1, -1).join(' - ');
-
-      results.push({
-        filename,
-        agent,
-        action,
-        date: dateTime,
-        mtime: mtime.toISOString(),
-        summary: fm['summary'] || fm['body'] || null,
-        slackTs: fm['slack-ts'] ? fm['slack-ts'].replace(/"/g, '') : null,
-        ok: fm['ok'] !== 'false',
-      });
-    }
-
-    results.sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
-    res.json(results.slice(0, limit));
+    results.sort((a, b) => new Date(b.mtime || 0) - new Date(a.mtime || 0));
+    res.json(results);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(502).json({ error: `Runtime unreachable: ${err.message}` });
   }
 });
 

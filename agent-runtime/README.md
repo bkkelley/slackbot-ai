@@ -14,7 +14,7 @@ Core execution daemon for the agent automation system. Runs agents on schedule o
 2. Worker pool (3 concurrent) picks up jobs from the SQLite queue (`data/jobs.db`)
 3. Executor spawns `claude --print --stream-json` with a per-job MCP server
 4. Context assembler builds the prompt from vault files (Agent profile + Action template + recent cards + injected files)
-5. Claude calls MCP tools during execution (`PostMessage`, `WriteCard`, `SpawnAgent`, `RunSkill`, etc.)
+5. Claude calls MCP tools during execution (`PostMessage`, `SpawnAgent`, `RunSkill`, etc.)
 6. Results accumulate in SQLite; events stream via WebSocket
 7. Terminal result metadata records cost, duration, tokens, model, tool usage, and efficiency hints
 
@@ -73,8 +73,6 @@ To add project-scoped MCP servers (e.g. Supabase, Vercel), create `<workspace>/.
 | Tool | What it does |
 |---|---|
 | `PostMessage` | Posts to the job's output channel (Slack/Discord) |
-| `WriteCard` | Writes a markdown card to `global/Card/` |
-| `UpdateCard` | Updates an existing card by cardId |
 | `SpawnAgent` | Spawns a child job (sync runs inline; async queues normally) |
 | `WaitForJob` | Blocks until an async job completes (max 600s) |
 | `GetJobStatus` | Returns current status of any job |
@@ -200,11 +198,11 @@ Named sets of allowed tools, defined in `toolsets.json`. Toolsets are global —
 
 | Toolset | Includes |
 |---|---|
-| `vault-readonly` | Read, Grep, Glob, PostMessage, WriteCard, GetJobStatus |
-| `default` | + WebSearch, UpdateCard, SpawnAgent, WaitForJob, RunSkill, RunWorkflow |
+| `vault-readonly` | Read, Grep, Glob, PostMessage, GetJobStatus |
+| `default` | + WebSearch, SpawnAgent, WaitForJob, RunSkill, RunWorkflow |
 | `extended` | + Write, Edit, Bash |
-| `web` | Read, Grep, Glob, WebSearch, WebFetch, PostMessage, WriteCard, GetJobStatus |
-| `code` | Read, Grep, Glob, Write, Edit, Bash, PostMessage, WriteCard, GetJobStatus |
+| `web` | Read, Grep, Glob, WebSearch, WebFetch, PostMessage, GetJobStatus |
+| `code` | Read, Grep, Glob, Write, Edit, Bash, PostMessage, GetJobStatus |
 
 ---
 

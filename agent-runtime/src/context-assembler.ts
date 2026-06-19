@@ -68,70 +68,6 @@ function extractWikilink(val: string | undefined): string | null {
   return m ? m[1] : val;
 }
 
-// --- Card queries ---
-
-interface CardEntry {
-  filename: string;
-  content: string;
-  mtime: Date;
-}
-
-function getRecentCards(
-  type: 'agent-log' | 'pattern',
-  agentWikilink: string | null,
-  days: number
-): CardEntry[] {
-  const cardDir = path.join(VAULT_PATH, 'Card');
-  if (!fs.existsSync(cardDir)) return [];
-
-  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  const results: CardEntry[] = [];
-
-  let filenames: string[];
-  try {
-    filenames = fs.readdirSync(cardDir);
-  } catch (err) {
-    logger.warn('Could not scan card directory — running without recent cards', {
-      cardDir,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return [];
-  }
-
-  for (const filename of filenames) {
-    if (!filename.endsWith('.md')) continue;
-    const filePath = path.join(cardDir, filename);
-    let content: string;
-    try {
-      content = readFile(filePath);
-    } catch {
-      continue;
-    }
-    const fm = parseFrontmatter(content);
-    const mtime = fs.statSync(filePath).mtime;
-    if (mtime < cutoff) continue;
-
-    if (type === 'agent-log') {
-      if (fm['card-type'] !== 'Agent Log') continue;
-      if (!fm['agent'] || !agentWikilink || !fm['agent'].includes(agentWikilink)) continue;
-    } else if (type === 'pattern') {
-      if (fm['card-type'] !== 'Agent Pattern') continue;
-      if (!fm['agent'] || !agentWikilink || !fm['agent'].includes(agentWikilink)) continue;
-      if (fm['pattern-status'] === 'RETIRED') continue;
-    }
-
-    results.push({ filename, content, mtime });
-  }
-
-  results.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
-  return results;
-}
-
-function formatCards(cards: CardEntry[]): string {
-  if (cards.length === 0) return '(none)';
-  return cards.map((c) => `--- ${c.filename} ---\n${c.content}`).join('\n\n');
-}
-
 // --- Check-in history ---
 
 interface SessionHistoryEntry {
@@ -224,10 +160,6 @@ export async function assemblePrompt(job: AgentJob, opts?: AssemblePromptOpts): 
     }
   }
 
-  // Recent cards
-  const agentLogs = getRecentCards('agent-log', agentName, 14).slice(0, 14);
-  const patterns = getRecentCards('pattern', agentName, 9999);
-
   // Session / check-in history (pre-fetched from SQLite by executor)
   let historySection = '';
   if (job.sessionId && opts?.sessionHistory && opts.sessionHistory.length > 0) {
@@ -247,15 +179,6 @@ export async function assemblePrompt(job: AgentJob, opts?: AssemblePromptOpts): 
   }
 
   parts.push('=== AGENT (identity, knowledge, instructions) ===', agentContent);
-
-  parts.push(
-    '',
-    '=== YOUR RECENT AGENT LOGS (last 14 days — do not repeat openings) ===',
-    formatCards(agentLogs),
-    '',
-    '=== ACTIVE PATTERNS (your distilled long-term observations) ===',
-    formatCards(patterns)
-  );
 
   if (actionContent) {
     parts.push(
@@ -288,13 +211,11 @@ export async function assemblePrompt(job: AgentJob, opts?: AssemblePromptOpts): 
   parts.push(
     '',
     '=== HOW TO OUTPUT RESULTS ===',
-    'Do NOT write SLACK_MESSAGE:, AGENT_LOG_CARD:, or SPAWN_AGENT: in your output.',
+    'Do NOT write SLACK_MESSAGE: or SPAWN_AGENT: in your output.',
     'Instead, use the tools available to you:',
     '- Call PostMessage to send a message to Slack',
-    '- Call WriteCard to write an agent log card to the vault',
     '- Call SpawnAgent to spawn a child agent job',
-    '- Call UpdateCard to update a card you already wrote this run',
-    'You must call PostMessage and WriteCard — do not just output text.'
+    'You must call PostMessage to communicate — do not just output text.'
   );
 
   return parts.join('\n');

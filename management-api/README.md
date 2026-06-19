@@ -28,7 +28,7 @@ Web dashboard and API proxy for the agent system. Runs at port 3456 (localhost o
 | `/agents/api/budgets` | Proxies → runtime budget policy, usage, and cost drift signals |
 | `/agents/api/notifications` | Proxies → runtime interrupt policy with scoped notification rules |
 | `/agents/api/evals` | Agent/action eval CRUD + sync runs |
-| `/agents/api/activity` | Vault card files |
+| `/agents/api/activity` | Recent jobs from the runtime queue |
 | `/agents/api/logs` | Tail runtime.log, slackbot.log |
 | `/agents/api/inbox` | Trigger inbox-processor run |
 

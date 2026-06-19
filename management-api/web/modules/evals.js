@@ -48,9 +48,9 @@ window.AppModules.evals = {
         inputText: '',
         expectedText: '',
         forbiddenText: '',
-        requiredToolsText: 'WriteCard',
+        requiredToolsText: 'PostMessage',
         minOutputChars: 80,
-        requireCard: true,
+        requireCard: false,
         requireMessage: false,
         enabled: true,
       };

@@ -148,17 +148,12 @@ window.AppModules.agents = {
       this.agentTimelineLoading = true;
       this.agentTimelineError = '';
       try {
-        const [queueRes, activityRes] = await Promise.all([
-          fetch('api/queue?limit=120'),
-          fetch('api/activity?limit=120'),
-        ]);
+        const queueRes = await fetch('api/queue?limit=120');
         const queueData = await queueRes.json();
-        const activityData = await activityRes.json();
         if (!queueRes.ok) throw new Error(queueData.error || 'Queue load failed');
-        if (!activityRes.ok) throw new Error(activityData.error || 'Activity load failed');
 
         const agentName = agent.name.toLowerCase();
-        const jobs = (queueData.jobs || [])
+        this.agentTimeline = (queueData.jobs || [])
           .filter(job =>
             (job.agent && job.agent.toLowerCase() === agentName) ||
             (job.command && job.command.toLowerCase().includes(agentName))
@@ -171,22 +166,7 @@ window.AppModules.agents = {
             time: job.completedAt || job.startedAt || job.createdAt,
             status: job.status,
             job,
-          }));
-
-        const cards = (activityData || [])
-          .filter(entry => entry.agent && entry.agent.toLowerCase() === agentName)
-          .map(entry => ({
-            id: `card:${entry.filename}`,
-            type: 'card',
-            title: entry.action || 'Agent log',
-            detail: entry.summary || entry.filename,
-            time: entry.mtime,
-            status: entry.ok ? 'done' : 'failed',
-            entry,
-          }));
-
-        this.agentTimeline = jobs
-          .concat(cards)
+          }))
           .sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0))
           .slice(0, 30);
         this.markApiOk();

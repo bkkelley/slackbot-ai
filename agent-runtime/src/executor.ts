@@ -30,11 +30,11 @@ const TOOLSETS_PATH = path.join(
 );
 
 const FALLBACK_TOOLSETS: Record<string, string> = {
-  'vault-readonly': 'Read,Grep,Glob,PostMessage,WriteCard,GetJobStatus',
-  'default': 'Read,Grep,Glob,WebSearch,PostMessage,WriteCard,UpdateCard,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow,WriteCanvas,ScheduleMessage,ListScheduledMessages,CancelScheduledMessage,AddReminder,CreateTaskList,AddTask,ListTasks',
-  'extended': 'Read,Grep,Glob,WebSearch,Write,Edit,Bash,PostMessage,WriteCard,UpdateCard,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow,WriteCanvas,ScheduleMessage,ListScheduledMessages,CancelScheduledMessage,AddReminder,CreateTaskList,AddTask,ListTasks',
-  'web': 'Read,Grep,Glob,WebSearch,WebFetch,PostMessage,WriteCard,GetJobStatus',
-  'code': 'Read,Grep,Glob,Write,Edit,Bash,PostMessage,WriteCard,GetJobStatus',
+  'vault-readonly': 'Read,Grep,Glob,PostMessage,GetJobStatus',
+  'default': 'Read,Grep,Glob,WebSearch,PostMessage,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow,WriteCanvas,ScheduleMessage,ListScheduledMessages,CancelScheduledMessage,AddReminder,CreateTaskList,AddTask,ListTasks',
+  'extended': 'Read,Grep,Glob,WebSearch,Write,Edit,Bash,PostMessage,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow,WriteCanvas,ScheduleMessage,ListScheduledMessages,CancelScheduledMessage,AddReminder,CreateTaskList,AddTask,ListTasks',
+  'web': 'Read,Grep,Glob,WebSearch,WebFetch,PostMessage,GetJobStatus',
+  'code': 'Read,Grep,Glob,Write,Edit,Bash,PostMessage,GetJobStatus',
 };
 
 function loadToolsets(): Record<string, string> {
@@ -684,7 +684,7 @@ function buildEfficiencyHints(
     if (toolset === 'extended' && !usedWrite) {
       hints.push({ type: 'toolset', severity: 'info', message: 'Extended toolset was not used for write/edit/bash tools.' });
     }
-    if ((toolset === 'default' || toolset === 'extended') && !usedWeb && toolsUsed.every((tool) => ['Read', 'Grep', 'Glob', 'PostMessage', 'WriteCard', 'GetJobStatus'].includes(tool))) {
+    if ((toolset === 'default' || toolset === 'extended') && !usedWeb && toolsUsed.every((tool) => ['Read', 'Grep', 'Glob', 'PostMessage', 'GetJobStatus'].includes(tool))) {
       hints.push({ type: 'toolset', severity: 'info', message: 'This may fit the vault-readonly toolset.' });
     }
   }

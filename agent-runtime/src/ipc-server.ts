@@ -2,8 +2,6 @@ import * as http from 'http';
 import { JobQueue } from './job-queue.js';
 import { Logger } from './logger.js';
 import { postMessage, PostMessageInput } from './mcp/tools/post-message.js';
-import { writeCardTool, WriteCardInput } from './mcp/tools/write-card.js';
-import { updateCardTool, UpdateCardInput } from './mcp/tools/update-card.js';
 import { spawnAgentTool, SpawnAgentInput, InlineRunner } from './mcp/tools/spawn-agent.js';
 import { waitForJobTool, WaitForJobInput } from './mcp/tools/wait-for-job.js';
 import { getJobStatusTool } from './mcp/tools/get-job-status.js';
@@ -115,17 +113,6 @@ export class IpcServer {
           }
           break;
         }
-        case 'WriteCard': {
-          result = writeCardTool(jobId, input as WriteCardInput, this.queue);
-          const wcResult = result as { ok: boolean; cardFile?: string };
-          if (wcResult.ok && wcResult.cardFile) {
-            this.accumulateCardFile(jobId, wcResult.cardFile);
-          }
-          break;
-        }
-        case 'UpdateCard':
-          result = updateCardTool(jobId, input as UpdateCardInput, this.queue);
-          break;
         case 'SpawnAgent': {
           result = await spawnAgentTool(
             jobId,
@@ -245,14 +232,6 @@ export class IpcServer {
   private accumulatePostedMessage(jobId: string, messageId: string): void {
     const acc = this.getOrInitAccumulator(jobId);
     acc.postedMessageIds.push(messageId);
-    this.queue.updateStatus(jobId, 'running', {
-      result: { ok: true, ...acc },
-    });
-  }
-
-  private accumulateCardFile(jobId: string, cardFile: string): void {
-    const acc = this.getOrInitAccumulator(jobId);
-    acc.cardFiles.push(cardFile);
     this.queue.updateStatus(jobId, 'running', {
       result: { ok: true, ...acc },
     });

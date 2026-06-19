@@ -552,18 +552,7 @@ window.AppModules.overview = {
           time: job.completedAt || job.updatedAt || job.startedAt || job.createdAt,
           job,
         }));
-      const cardFailures = this.activity
-        .filter(entry => entry.ok === false)
-        .map(entry => ({
-          id: `card:${entry.filename}`,
-          type: 'card',
-          title: `${entry.agent || 'Agent'} / ${entry.action || 'Run'}`,
-          detail: entry.summary || entry.filename,
-          time: entry.mtime,
-          entry,
-        }));
       return queueFailures
-        .concat(cardFailures)
         .sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0))
         .slice(0, 6);
     },
@@ -578,17 +567,7 @@ window.AppModules.overview = {
         time: job.startedAt || job.createdAt,
         job,
       }));
-      const cards = this.activity.map(entry => ({
-        id: `card:${entry.filename}`,
-        type: 'card',
-        title: `${entry.agent || 'Agent'} / ${entry.action || 'Run'}`,
-        status: entry.ok ? 'done' : 'failed',
-        detail: entry.summary || entry.filename,
-        time: entry.mtime,
-        entry,
-      }));
       return jobs
-        .concat(cards)
         .sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0))
         .slice(0, 10);
     },
@@ -604,7 +583,6 @@ window.AppModules.overview = {
         counts.set(key, item);
       };
       for (const job of this.overviewQueue) touch(job.agent, job.status);
-      for (const entry of this.activity) touch(entry.agent, entry.ok ? 'done' : 'failed');
       return Array.from(counts.values())
         .sort((a, b) => b.runs - a.runs || b.failures - a.failures || a.name.localeCompare(b.name))
         .slice(0, 8);

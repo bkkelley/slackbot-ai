@@ -1,7 +1,7 @@
 {
-  "vault-readonly": "Read,Grep,Glob,PostMessage,WriteCard,GetJobStatus",
-  "default": "Read,Grep,Glob,WebSearch,PostMessage,WriteCard,UpdateCard,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow,WriteCanvas,ScheduleMessage,ListScheduledMessages,CancelScheduledMessage,AddReminder,CreateTaskList,AddTask,ListTasks",
-  "extended": "Read,Grep,Glob,WebSearch,Write,Edit,Bash,PostMessage,WriteCard,UpdateCard,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow,WriteCanvas,ScheduleMessage,ListScheduledMessages,CancelScheduledMessage,AddReminder,CreateTaskList,AddTask,ListTasks",
-  "web": "Read,Grep,Glob,WebSearch,WebFetch,PostMessage,WriteCard,GetJobStatus",
-  "code": "Read,Grep,Glob,Write,Edit,Bash,PostMessage,WriteCard,GetJobStatus"
+  "vault-readonly": "Read,Grep,Glob,PostMessage,GetJobStatus",
+  "default": "Read,Grep,Glob,WebSearch,PostMessage,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow,WriteCanvas,ScheduleMessage,ListScheduledMessages,CancelScheduledMessage,AddReminder,CreateTaskList,AddTask,ListTasks",
+  "extended": "Read,Grep,Glob,WebSearch,Write,Edit,Bash,PostMessage,SpawnAgent,WaitForJob,GetJobStatus,RunSkill,RunWorkflow,WriteCanvas,ScheduleMessage,ListScheduledMessages,CancelScheduledMessage,AddReminder,CreateTaskList,AddTask,ListTasks",
+  "web": "Read,Grep,Glob,WebSearch,WebFetch,PostMessage,GetJobStatus",
+  "code": "Read,Grep,Glob,Write,Edit,Bash,PostMessage,GetJobStatus"
 }

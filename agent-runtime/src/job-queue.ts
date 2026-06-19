@@ -15,13 +15,6 @@ CREATE TABLE IF NOT EXISTS jobs (
 CREATE INDEX IF NOT EXISTS jobs_status_idx ON jobs(status, created_at);
 CREATE INDEX IF NOT EXISTS jobs_parent_idx ON jobs(parent_job_id);
 
-CREATE TABLE IF NOT EXISTS card_ids (
-  card_id TEXT PRIMARY KEY,
-  job_id TEXT NOT NULL,
-  card_file TEXT NOT NULL,
-  created_at TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS approval_requests (
   id TEXT PRIMARY KEY,
   data JSON NOT NULL,
@@ -356,28 +349,6 @@ export class JobQueue {
       });
       this.waiters.set(id, list);
     });
-  }
-
-  // Card IDs table
-  registerCardId(cardId: string, jobId: string, cardFile: string): void {
-    this.db
-      .prepare(
-        `INSERT OR REPLACE INTO card_ids (card_id, job_id, card_file, created_at) VALUES (?, ?, ?, ?)`
-      )
-      .run(cardId, jobId, cardFile, new Date().toISOString());
-  }
-
-  resolveCardId(cardId: string): { jobId: string; cardFile: string } | null {
-    const row = this.db
-      .prepare(`SELECT job_id, card_file FROM card_ids WHERE card_id=?`)
-      .get(cardId) as { job_id: string; card_file: string } | undefined;
-    return row ? { jobId: row.job_id, cardFile: row.card_file } : null;
-  }
-
-  updateCardFile(cardId: string, newFile: string): void {
-    this.db
-      .prepare(`UPDATE card_ids SET card_file=? WHERE card_id=?`)
-      .run(newFile, cardId);
   }
 
   removePending(id: string): void {

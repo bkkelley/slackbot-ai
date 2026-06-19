@@ -412,7 +412,7 @@
     </div>
 
     <div class="space-y-2">
-      <template x-for="entry in activity" :key="entry.filename">
+      <template x-for="entry in activity" :key="entry.id">
         <div class="border border-gray-800 rounded-lg overflow-hidden hover:border-gray-700 transition">
           <div
             @click="entry._expanded = !entry._expanded"
@@ -428,7 +428,7 @@
             <!-- Bottom row: date + status -->
             <div class="flex items-center gap-2 mt-1 pl-4">
               <span class="text-xs text-gray-500" x-text="formatDate(entry.mtime)"></span>
-              <span :class="entry.ok ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'" class="text-xs px-2 py-0.5 rounded" x-text="entry.ok ? 'ok' : 'failed'"></span>
+              <span :class="entry.ok ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'" class="text-xs px-2 py-0.5 rounded" x-text="entry.status || (entry.ok ? 'ok' : 'failed')"></span>
             </div>
           </div>
 
@@ -437,10 +437,10 @@
             <div x-show="entry.summary" class="text-xs text-gray-400 whitespace-pre-wrap leading-relaxed" x-text="entry.summary"></div>
             <div x-show="!entry.summary" class="text-xs text-gray-600 italic">No summary available</div>
             <div class="flex items-center gap-4 mt-3 pt-3 border-t border-gray-800">
-              <span class="text-xs text-gray-600" x-text="entry.filename"></span>
-              <template x-if="entry.slackTs">
-                <span class="text-xs text-gray-600">slack: <span x-text="entry.slackTs"></span></span>
-              </template>
+              <button @click="openJobDetail(entry.id)" class="text-xs text-indigo-400 hover:text-indigo-300">Open job →</button>
+              <template x-if="entry.model"><span class="text-xs text-gray-600" x-text="entry.model"></span></template>
+              <template x-if="entry.durationMs != null"><span class="text-xs text-gray-600" x-text="(entry.durationMs/1000).toFixed(1) + 's'"></span></template>
+              <template x-if="entry.costUsd != null"><span class="text-xs text-gray-600" x-text="'$' + entry.costUsd.toFixed(4)"></span></template>
             </div>
           </div>
         </div>
@@ -608,27 +608,6 @@
                   </div>
                 </template>
 
-                <!-- Recent Runs -->
-                <template x-if="detailOverview">
-                  <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-widest mb-3">Recent Runs</div>
-                    <template x-if="detailOverview.recentCards && detailOverview.recentCards.length > 0">
-                      <div class="space-y-2">
-                        <template x-for="card in detailOverview.recentCards" :key="card.filename">
-                          <div class="px-3 py-2.5 bg-gray-900 rounded border border-gray-800">
-                            <div class="flex items-center justify-between">
-                              <span class="text-sm" x-text="card.action"></span>
-                              <span class="text-xs text-gray-600" x-text="card.date"></span>
-                            </div>
-                            <div x-show="card.summary" class="text-xs text-gray-500 mt-1 truncate" x-text="card.summary"></div>
-                          </div>
-                        </template>
-                      </div>
-                    </template>
-                    <div x-show="!detailOverview.recentCards || detailOverview.recentCards.length === 0" class="text-xs text-gray-600 italic">No log cards yet</div>
-                  </div>
-                </template>
-
               </div>
             </template>
           </div>
@@ -638,7 +617,7 @@
             <div class="flex items-center justify-between mb-4">
               <div>
                 <div class="text-xs text-gray-500 uppercase tracking-widest">Activity Timeline</div>
-                <div class="text-xs text-gray-700 mt-1">Recent queue jobs and agent log cards</div>
+                <div class="text-xs text-gray-700 mt-1">Recent queue jobs</div>
               </div>
               <button @click="loadAgentTimeline()" class="px-2 py-1.5 text-xs rounded border border-gray-800 text-gray-400 hover:text-white transition">Refresh</button>
             </div>
@@ -2186,7 +2165,7 @@ tags:
           </div>
           <div class="flex gap-3">
             <span class="text-gray-500 w-28 flex-shrink-0">Instructions</span>
-            <span class="text-gray-400">What it reads, what it does, how it communicates. Use <code class="bg-gray-800 px-1 rounded">PostMessage</code> to send to Slack, <code class="bg-gray-800 px-1 rounded">WriteCard</code> to log to vault, <code class="bg-gray-800 px-1 rounded">SpawnAgent</code> to delegate.</span>
+            <span class="text-gray-400">What it reads, what it does, how it communicates. Use <code class="bg-gray-800 px-1 rounded">PostMessage</code> to send to Slack, <code class="bg-gray-800 px-1 rounded">SpawnAgent</code> to delegate.</span>
           </div>
           <div class="flex gap-3">
             <span class="text-gray-500 w-28 flex-shrink-0">Knowledge</span>

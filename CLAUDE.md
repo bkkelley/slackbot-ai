@@ -18,7 +18,7 @@ system/
 
 ## Agent Runtime (`agent-runtime/`)
 
-The core daemon. Runs agents on schedule or on demand, routes output to Slack/Discord, writes cards to the vault.
+The core daemon. Runs agents on schedule or on demand, routes output to Slack/Discord.
 
 **Port:** `3457` (localhost only)
 
@@ -27,8 +27,8 @@ The core daemon. Runs agents on schedule or on demand, routes output to Slack/Di
 1. Scheduler reads `jobs.json` every 60s, submits due jobs to the queue
 2. Worker pool (3 concurrent) picks up jobs from the SQLite queue (`data/jobs.db`)
 3. Executor spawns `claude --print --stream-json` with a per-job MCP server
-4. Context assembler builds the prompt from vault files (Agent profile + Action template + recent cards + injected files)
-5. Claude calls MCP tools during execution (PostMessage, WriteCard, SpawnAgent, RunSkill, etc.)
+4. Context assembler builds the prompt from vault files (Agent profile + Action template + injected files)
+5. Claude calls MCP tools during execution (PostMessage, SpawnAgent, RunSkill, etc.)
 6. Results accumulate in SQLite; events stream via WebSocket
 
 ### Source layout
@@ -51,8 +51,6 @@ src/
     ├── server.ts          — stdio MCP server, one per job
     └── tools/
         ├── post-message.ts   — PostMessage
-        ├── write-card.ts     — WriteCard
-        ├── update-card.ts    — UpdateCard
         ├── spawn-agent.ts    — SpawnAgent
         ├── wait-for-job.ts   — WaitForJob
         ├── get-job-status.ts — GetJobStatus
@@ -64,8 +62,6 @@ src/
 | Tool | What it does |
 |------|-------------|
 | `PostMessage` | Posts a message to the job's output channel (Slack/Discord) |
-| `WriteCard` | Writes a markdown card to `global/Card/` |
-| `UpdateCard` | Updates an existing card by cardId |
 | `SpawnAgent` | Spawns a child job (sync runs inline; async queues normally) |
 | `WaitForJob` | Blocks until an async job completes (max 600s) |
 | `GetJobStatus` | Returns current status of any job |
@@ -301,13 +297,13 @@ Web dashboard at `http://localhost:3456/agents/`. Proxies to agent-runtime and v
 | `/agents/api/jobs` | runtime `/api/schedules` (schedule templates) |
 | `/agents/api/queue` | runtime `/api/jobs` (live queue) |
 | `/agents/api/dispatch` | runtime `/api/jobs` (submit) |
-| `/agents/api/activity` | vault card files |
+| `/agents/api/activity` | recent jobs from the runtime queue |
 | `/agents/api/logs` | runtime.log, slackbot.log |
 | `/agents/api/inbox` | runtime `/api/agents/inbox-processor/run` |
 
 ### Web UI tabs
 
-- **Activity** — recent cards from vault
+- **Activity** — recent jobs from the runtime queue
 - **Agents** — agents grouped by scope (Global + per-workspace); full CRUD + file editor + action templates
 - **Jobs** — schedule templates; create/edit/delete; live queue with streaming output
 - **Logs** — tail runtime.log and slackbot.log
@@ -402,7 +398,7 @@ curl -s -X POST http://127.0.0.1:3457/api/workflows/Morning%20Routine/run \
 RunWorkflow({ workflow: "Morning Routine", mode: "sync" })
 ```
 
-**Behavior:** Steps run sequentially. If any step fails, the workflow aborts and returns the error. All cards and messages from all steps are accumulated in the final result.
+**Behavior:** Steps run sequentially. If any step fails, the workflow aborts and returns the error. All messages from all steps are accumulated in the final result.
 
 Runtime jobs bypass low-level tool permissions by default; use explicit `approval` steps for semantic checkpoints like publishing, deployment, deletion, or other human decisions.
 If a workflow has an output channel, approval steps also send Slack approval buttons.
@@ -465,7 +461,7 @@ If no `persona` field is set, behavior is unchanged.
 
 An **opt-in** local memory + recall layer ([MemPalace](https://github.com/mempalace/mempalace)). **Fully offline** — local embeddings, **no API key, no LLM**. The whole feature no-ops unless `MEMORY_ENABLED=true`; every call fails soft, so the system behaves identically when it's not installed.
 
-**How memory is populated:** `mempalace mine` indexes content into a local "palace" (`~/.mempalace/palace`). A scheduled shell job (`mempalace-mine`, hourly) mines **`~/claude-workspaces`** (project files, vault cards, notes). Script: `scripts/mempalace-mine.sh` (self-gates on `MEMORY_ENABLED`). We deliberately do **not** mine `~/.claude/projects` (all Claude Code session transcripts) — that pulls in obsolete history and mixes every client's context together, which makes recall surface stale/cross-project answers.
+**How memory is populated:** `mempalace mine` indexes content into a local "palace" (`~/.mempalace/palace`). A scheduled shell job (`mempalace-mine`, hourly) mines **`~/claude-workspaces`** (project files, vault notes). Script: `scripts/mempalace-mine.sh` (self-gates on `MEMORY_ENABLED`). We deliberately do **not** mine `~/.claude/projects` (all Claude Code session transcripts) — that pulls in obsolete history and mixes every client's context together, which makes recall surface stale/cross-project answers.
 
 **Wiring (only when enabled):**
 - **Bot** — auto-recalls relevant context into each prompt (`[Relevant memory]` preamble) via `mempalace search`, and gets MemPalace's tools through its native `mempalace-mcp` stdio server (registered in `claude-handler.ts`). Client: `slack-bot/src/orchestration/memory.ts`.
@@ -552,7 +548,7 @@ curl -s -X POST http://127.0.0.1:3457/api/jobs \
 
 ### Common to both
 
-**Agent output:** Agents use MCP tools (`PostMessage`, `WriteCard`) — no output directives required.
+**Agent output:** Agents use MCP tools (`PostMessage`) — no output directives required.
 
 **Personas:** Set `persona: "[[PersonaName]]"` in frontmatter. Context assembler resolves from project scope first, then global.
 

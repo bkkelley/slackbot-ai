@@ -68,8 +68,6 @@ src/
     server.ts          — stdio MCP server, one spawned per job; forwards calls to IPC
     tools/
       post-message.ts  — PostMessage({ text, channel?, threadId? })
-      write-card.ts    — WriteCard({ yaml, content? })
-      update-card.ts   — UpdateCard({ cardId, yaml, content? })
       spawn-agent.ts   — SpawnAgent({ agent, action, mode, ... })
       wait-for-job.ts  — WaitForJob({ jobId, timeoutSeconds? })
       get-job-status.ts — GetJobStatus({ jobId })
@@ -126,8 +124,6 @@ All endpoints require `X-Bot-Auth: <BOT_RUNTIME_SHARED_SECRET>` header.
 | Tool | What it does |
 |------|-------------|
 | `PostMessage` | Posts a message to the job's output channel via bot transport-proxy |
-| `WriteCard` | Writes a markdown card to `global/Card/`, records cardId in SQLite |
-| `UpdateCard` | Updates an existing card by cardId |
 | `SpawnAgent` | Spawns a child job (sync runs inline; async queues normally) |
 | `WaitForJob` | Blocks until a job completes (max 600s, with priority boost for children) |
 | `GetJobStatus` | Returns current status of any job |
@@ -238,7 +234,7 @@ Web dashboard running at `http://localhost:3456/agents/`.
 | `/agents/api/jobs` | `routes/jobs.js` | runtime `/api/schedules` (schedule templates) |
 | `/agents/api/queue` | `routes/queue.js` | runtime `/api/jobs` (live queue) |
 | `/agents/api/dispatch` | `routes/dispatch.js` | runtime `/api/jobs` (submit) |
-| `/agents/api/activity` | `routes/activity.js` | vault card files |
+| `/agents/api/activity` | `routes/activity.js` | recent jobs from the runtime queue |
 | `/agents/api/logs` | `routes/logs.js` | runtime.log, slackbot.log |
 | `/agents/api/inbox` | `routes/inbox.js` | runtime `/api/agents/inbox-processor/run` |
 
@@ -256,7 +252,7 @@ Browsers can't reach `127.0.0.1:3457` directly. `GET /agents/api/queue/:id/strea
 - **Jobs** — scheduled job templates (from `jobs.json`); run any agent job on demand; live stream output
 - **Queue** — live SQLite job queue; watch active jobs; auto-refreshes every 8s
 - **Agents** — list and inspect agent vault files
-- **Activity** — recent card files from vault
+- **Activity** — recent jobs from the runtime queue
 - **Logs** — tail runtime.log and slackbot.log
 - **Inbox** — trigger inbox-processor
 
@@ -270,7 +266,6 @@ Browsers can't reach `127.0.0.1:3457` directly. `GET /agents/api/queue/:id/strea
 | `system/scheduler/runner.js` | agent-runtime built-in scheduler |
 | `com.slackbot.runtime` LaunchAgent | agent-runtime LaunchAgent |
 | `SLACK_MESSAGE:` output directive | `PostMessage` MCP tool |
-| `AGENT_LOG_CARD:` output directive | `WriteCard` MCP tool |
 | `SPAWN_AGENT:` / `SPAWN_CALLBACK:` directives | `SpawnAgent` MCP tool |
 | `sage-sessions.json` / `sage-agent-threads.json` | `sessionId` + `threadId` in `jobs.db` |
 | `sage-followup-daemon` scheduler entry | removed (Sage sessions are stateless) |

@@ -77,4 +77,4 @@ Answer like a careful on-call engineer:
 2. Evidence next, with paths and IDs.
 3. Recommended next step last.
 
-Use `PostMessage` when an output channel exists. Use `WriteCard` only when the answer is a meaningful diagnostic record that should be preserved.
+Use `PostMessage` when an output channel exists.

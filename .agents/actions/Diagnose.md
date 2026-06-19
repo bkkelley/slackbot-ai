@@ -35,24 +35,4 @@ Call `PostMessage` with a concise answer:
 - Include the key evidence.
 - Include a concrete next step.
 
-If the investigation is substantial or identifies an incident worth remembering, also call `WriteCard`:
-
-```yaml
-card-type: Agent Log
-agent: "[[Ask the System]]"
-action: "Diagnose"
-tag: system
-session-type: system-diagnostic
-summary: "[one-line summary]"
-tags:
-  - cards
-  - system
-body: |
-  # System Diagnostic
-  **Question:** [user question]
-  **Conclusion:** [short answer]
-  **Evidence:** [paths, job IDs, logs, observations]
-  **Recommended next step:** [specific action]
-```
-
 Do not write output directives. Use the MCP tools directly.
