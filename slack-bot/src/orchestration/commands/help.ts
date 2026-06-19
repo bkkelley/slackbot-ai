@@ -3,7 +3,8 @@ import { CommandContext } from './types';
 const HELP_TEXT = `*Commands*
 
 *Setup*
-\`$onboard\` — check integration readiness + next steps
+\`$onboard\` — walk through setup conversationally, one step at a time
+\`$onboard status\` — quick integration readiness check
 \`$remember <preference>\` — save a working preference to this project's CLAUDE.md
 
 *Agents*
@@ -28,6 +29,10 @@ const HELP_TEXT = `*Commands*
 \`$project alias <names>\` — extra names that auto-scope a DM to this project
 _In a DM, just mention a client name to scope to it (or start with \`project: <name>\`)._
 
+*Model*
+\`model haiku|sonnet|opus\` — set the model for this conversation
+\`model reset\` — revert to the default model
+
 *MCP*
 \`mcp\` — list configured MCP servers
 \`mcp reload\` — reload mcp-servers.json without restarting
@@ -44,8 +49,8 @@ _In a DM, just mention a client name to scope to it (or start with \`project: <n
 \`$workflows delete <name>\` — delete a global workflow
 
 *Tasks* _(Slack Lists — paid plan)_
-\`$tasks create <name>\` — create a task list
-\`$tasks add <listId> <task>\` — add a task
+\`$tasks create <name>\` — create a task list (returns its ID + column ID)
+\`$tasks add <listId> <columnId> <task>\` — add a task
 \`$tasks list <listId>\` — show tasks in a list
 
 *Help*
