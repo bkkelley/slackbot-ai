@@ -4,10 +4,12 @@ import { loadChannelProjects } from '../channel-projects';
 const MGMT = `http://127.0.0.1:${process.env.MANAGEMENT_PORT || 3456}/agents/api`;
 
 /**
- * `$onboard` — show setup readiness (integrations) + next steps, using the management-api's
- * onboarding engine (single source of truth, shared with the dashboard).
+ * `$onboard` (bare) — falls through to the Claude session, which runs the conversational `onboard`
+ *   skill and walks the user through setup one step at a time (see message-processor handoff).
+ * `$onboard status` — quick one-shot readiness dump using the management-api's onboarding engine
+ *   (single source of truth, shared with the dashboard).
  * `$remember <preference>` — capture a durable working preference into the project's CLAUDE.md
- * (or global in a DM) so the bot follows it going forward.
+ *   (or global in a DM) so the bot follows it going forward.
  */
 export class OnboardCommand {
   async handle(ctx: CommandContext): Promise<boolean> {
@@ -39,8 +41,9 @@ export class OnboardCommand {
       return true;
     }
 
-    // $onboard
-    if (/^\$onboard\b/i.test(t)) {
+    // $onboard status — quick one-shot dump. (Bare `$onboard` returns false below so the Claude
+    // session can run the conversational `onboard` skill instead.)
+    if (/^\$onboard\s+status\b/i.test(t)) {
       await reply('🚀 Checking your setup…');
       try {
         const r = await fetch(`${MGMT}/onboarding/status?fresh=1`);

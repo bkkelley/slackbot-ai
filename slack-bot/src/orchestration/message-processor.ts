@@ -183,7 +183,22 @@ export class MessageProcessor {
     // "general" workspace) decide where Claude runs.
     const threadKey = `${channelId}:${effectiveThreadId}`;
     let promptText = text || '';
-    if (isDM && promptText) {
+
+    // Bare `$onboard` (or a natural-language "help me set up") hands the conversation to the Claude
+    // session, which runs the interactive `onboard` skill. (`$onboard status` is handled earlier by
+    // OnboardCommand as a quick one-shot dump.)
+    const isOnboard =
+      /^\$onboard\s*$/i.test(promptText.trim()) ||
+      /^(onboard me|help me (set ?up|onboard)|walk me through (the )?set ?up)\b/i.test(promptText.trim());
+    if (isOnboard) {
+      promptText =
+        'Run the `onboard` skill (via the Skill tool) and act as the interactive setup guide it ' +
+        'describes: read the live onboarding status, then walk me through the next incomplete step ' +
+        'conversationally — one step at a time, verifying each before moving on. Start now with a ' +
+        'short greeting and the first thing that needs attention.';
+    }
+
+    if (!isOnboard && isDM && promptText) {
       const m = promptText.match(/^project:\s*(.+?)\s*(\n[\s\S]*)?$/i);
       if (m) {
         const proj = sanitizeProject(m[1]);
