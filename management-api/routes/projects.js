@@ -81,13 +81,17 @@ function saveManifest(name, m) {
 // Slack conversation IDs: channels C…, groups/private G…, DMs D… (uppercase alphanumeric).
 const isChannelId = (v) => /^[CDG][A-Z0-9]{6,}$/i.test(String(v || '').trim());
 
+// Reserved subdirectories of baseDirectory that are system infrastructure, not projects:
+// `system` is the automation code, co-located under the registry root after the layout move.
+const RESERVED_PROJECT_NAMES = new Set(['system']);
+
 // GET / — list all workspace directories with counts + project bindings
 router.get('/', (req, res) => {
   try {
     if (!fs.existsSync(baseDirectory)) return res.json([]);
     const byProject = channelsByProject();
     const projects = fs.readdirSync(baseDirectory, { withFileTypes: true })
-      .filter(d => (d.isDirectory() || d.isSymbolicLink()) && !d.name.startsWith('.'))
+      .filter(d => (d.isDirectory() || d.isSymbolicLink()) && !d.name.startsWith('.') && !RESERVED_PROJECT_NAMES.has(d.name))
       .map(d => {
         const projectDir = path.join(baseDirectory, d.name);
         const agentsDir = path.join(baseDirectory, d.name, '.agents');
