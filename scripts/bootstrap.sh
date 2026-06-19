@@ -36,11 +36,11 @@ say "Installing dependencies + building (this can take a minute)…"
 
 # ── 2. Workspace + vault dirs ─────────────────────────────────────────────────
 say "Creating workspace + vault directories…"
-mkdir -p "$HOME/claude-workspaces/admin/Agent" \
-         "$HOME/claude-workspaces/admin/Card" \
-         "$HOME/claude-workspaces/admin/_agent_actions" \
-         "$HOME/claude-workspaces/admin/_workflows" \
-         "$HOME/claude-workspaces/admin/_personas" \
+mkdir -p "$HOME/claude-workspaces/global/Agent" \
+         "$HOME/claude-workspaces/global/Card" \
+         "$HOME/claude-workspaces/global/_agent_actions" \
+         "$HOME/claude-workspaces/global/_workflows" \
+         "$HOME/claude-workspaces/global/_personas" \
          "$HOME/claude-workspaces/general" \
          "$REPO_ROOT/.local/logs" \
          "$REPO_ROOT/agent-runtime/data"

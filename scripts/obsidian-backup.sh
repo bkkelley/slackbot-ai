@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # All paths/remote are env-overridable so nothing is hardcoded to a user.
-SOURCE="${VAULT_PATH:-$HOME/claude-workspaces/admin}"
-MIRROR="${OBSIDIAN_BACKUP_MIRROR:-$HOME/claude-workspaces/admin-git-backup}"
+SOURCE="${VAULT_PATH:-$HOME/claude-workspaces/global}"
+MIRROR="${OBSIDIAN_BACKUP_MIRROR:-$HOME/claude-workspaces/global-git-backup}"
 REMOTE="${OBSIDIAN_BACKUP_REMOTE:-}"
 BRANCH="${OBSIDIAN_BACKUP_BRANCH:-main}"
 

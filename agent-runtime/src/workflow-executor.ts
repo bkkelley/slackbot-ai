@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const { assertSafeSegment, optionalScope, safeJoin, safeMarkdownFile } = require('../../shared/path-guard.js');
 const { findSkillFile, skillSearchSummary } = require('../../shared/skill-resolver.js');
 
-const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/admin`;
+const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/global`;
 const BASE_DIRECTORY = process.env.BASE_DIRECTORY || `${process.env.HOME}/claude-workspaces`;
 const BOT_HTTP_PORT = process.env.BOT_HTTP_PORT || '3458';
 const BOT_RUNTIME_SHARED_SECRET = process.env.BOT_RUNTIME_SHARED_SECRET || '';

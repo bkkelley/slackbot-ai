@@ -7,7 +7,7 @@ import { createRequire } from 'module';
 const logger = new Logger('write-card');
 const require = createRequire(import.meta.url);
 const { assertSafeSegment, safeJoin } = require('../../../../shared/path-guard.js');
-const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/admin`;
+const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/global`;
 
 export interface WriteCardInput {
   yaml: string;

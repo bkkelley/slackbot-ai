@@ -209,7 +209,7 @@ export function listProjects(): string[] {
   try {
     return fs
       .readdirSync(BASE_DIRECTORY, { withFileTypes: true })
-      .filter((e) => e.isDirectory() && !e.name.startsWith('.') && e.name !== 'admin')
+      .filter((e) => e.isDirectory() && !e.name.startsWith('.') && e.name !== 'global' && e.name !== 'system')
       .map((e) => e.name)
       .sort((a, b) => a.localeCompare(b));
   } catch {

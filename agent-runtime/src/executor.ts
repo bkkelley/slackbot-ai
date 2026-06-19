@@ -256,7 +256,7 @@ export class Executor {
           env: {
             RUNTIME_IPC_PORT: String(this._ipcPort),
             JOB_ID: job.id,
-            VAULT_PATH: process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/admin`,
+            VAULT_PATH: process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/global`,
             BOT_HTTP_PORT: process.env.BOT_HTTP_PORT || '3458',
             BOT_RUNTIME_SHARED_SECRET: process.env.BOT_RUNTIME_SHARED_SECRET || '',
           },

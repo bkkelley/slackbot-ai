@@ -5,7 +5,7 @@ import { Logger } from './logger.js';
 import { createRequire } from 'module';
 import { memoryEnabled, recall, buildQuery } from './memory.js';
 
-const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/admin`;
+const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/global`;
 const BASE_DIRECTORY = process.env.BASE_DIRECTORY || `${process.env.HOME}/claude-workspaces`;
 
 const logger = new Logger('context-assembler');

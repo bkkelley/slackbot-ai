@@ -9,7 +9,7 @@ const { assertSafeSegment } = require('../../../../shared/path-guard.js');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { listActionsForAgent } = require('../../../../shared/action-resolver.js');
 
-const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/admin`;
+const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/global`;
 const WORKFLOWS_DIR = path.join(VAULT_PATH, '_workflows');
 const GLOBAL_AGENTS_DIR = path.join(process.env.HOME || '', '.claude', 'agents');
 

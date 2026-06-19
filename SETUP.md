@@ -48,7 +48,7 @@ Three always-on localhost services, run as macOS LaunchAgents:
 | Management API/UI | `com.slackbot.management` | 3456 | Web dashboard (localhost only) |
 
 State lives outside the repo:
-- `~/claude-workspaces/admin/` — the vault (global agents, cards, workflows, personas)
+- `~/claude-workspaces/global/` — the vault (global agents, cards, workflows, personas)
 - `~/claude-workspaces/general/` — default project workspace (used when a channel isn't mapped)
 - `~/claude-workspaces/channel-projects.json` — channel→project mappings
 - `~/.claude/skills/outlook/` — Outlook skill (optional, for the Home tab)
@@ -165,12 +165,12 @@ they run via `tsx` at runtime but should build clean (0 errors) before going liv
 ## 4. Create workspace + vault dirs [auto]
 
 ```bash
-mkdir -p ~/claude-workspaces/admin/{Agent,Card,_agent_actions,_workflows,_personas}
+mkdir -p ~/claude-workspaces/global/{Agent,Card,_agent_actions,_workflows,_personas}
 mkdir -p ~/claude-workspaces/general
 mkdir -p <repo>/.local/logs <repo>/agent-runtime/data
 ```
 
-`admin` is the vault (global agents/cards/workflows/personas). `general` is the default project
+`global` is the vault (global agents/cards/workflows/personas). `general` is the default project
 workspace used for DMs and unmapped channels.
 
 ---

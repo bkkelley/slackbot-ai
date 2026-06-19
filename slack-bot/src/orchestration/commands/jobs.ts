@@ -7,7 +7,7 @@ import { config } from '../../config';
 import { CommandContext } from './types';
 
 const SCHEDULER_DIR = path.join(__dirname, '../../../scheduler');
-const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/admin`;
+const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/global`;
 const GLOBAL_AGENTS_DIR = path.join(process.env.HOME || '', '.claude', 'agents');
 const { listActionsForAgent } = require('../../../../shared/action-resolver.js');
 

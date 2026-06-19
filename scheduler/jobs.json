@@ -18,7 +18,7 @@
   {
     "id": "inbox-processor",
     "cron": "*/15 * * * *",
-    "command": "/bin/bash $HOME/claude-workspaces/admin/Meta/run-inbox-processor.sh",
+    "command": "/bin/bash $HOME/claude-workspaces/global/Meta/run-inbox-processor.sh",
     "enabled": false,
     "lastRun": "2026-05-25T02:00:52.064Z"
   },

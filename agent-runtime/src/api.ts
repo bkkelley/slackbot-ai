@@ -21,7 +21,7 @@ const require = createRequire(import.meta.url);
 const { assertSafeSegment, optionalScope, safeJoin, safeMarkdownFile } = require('../../shared/path-guard.js');
 const { resolveActionFilePath } = require('../../shared/action-resolver.js');
 
-const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/admin`;
+const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/global`;
 const BASE_DIRECTORY = process.env.BASE_DIRECTORY || `${process.env.HOME}/claude-workspaces`;
 const TOOLSETS_PATH = path.join(path.dirname(path.dirname(new URL(import.meta.url).pathname)), 'toolsets.json');
 const FALLBACK_TOOLSETS: Record<string, string> = {
@@ -55,7 +55,7 @@ function validateScheduleCommand(command: unknown): string | undefined {
     `/usr/local/bin/node ${home}/claude-workspaces/system/scheduler/`,
     `node ${home}/claude-workspaces/system/scheduler/`,
     `/bin/bash ${home}/claude-workspaces/system/scripts/`,
-    `/bin/bash ${home}/claude-workspaces/admin/Meta/`,
+    `/bin/bash ${home}/claude-workspaces/global/Meta/`,
   ];
   if (!allowed.some((prefix) => text.startsWith(prefix))) {
     throw new Error('command must use an approved scheduler/script prefix');

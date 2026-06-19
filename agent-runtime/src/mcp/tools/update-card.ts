@@ -4,7 +4,7 @@ import { JobQueue } from '../../job-queue.js';
 import { Logger } from '../../logger.js';
 
 const logger = new Logger('update-card');
-const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/admin`;
+const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/global`;
 
 export interface UpdateCardInput {
   cardId: string;

@@ -1,7 +1,7 @@
 import { Logger } from './logger.js';
 import { RuntimeApiClient } from './runtime-api-client.js';
 
-export const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/admin`;
+export const VAULT_PATH = process.env.VAULT_PATH || `${process.env.HOME}/claude-workspaces/global`;
 
 // Agent channel map: channel ID → { agent name, working directory }
 export const AGENT_CHANNELS: Record<string, { agent: string; dir: string }> = {};
