@@ -102,6 +102,8 @@ const TOOLS = [
 
   // ── Projects ──
   { name: 'ListProjects', description: 'List projects (workspaces) with their channel/Salesforce/Drive/alias bindings.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'CreateProject', description: 'Create a new empty project workspace by name (a folder under ~/claude-workspaces with a scaffolded .agents/ dir). Name must be alphanumeric (hyphens/underscores ok).',
+    inputSchema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] } },
   { name: 'MapChannelToProject', description: 'Map a Slack channel to a project. Defaults to THIS channel if channelId is omitted.',
     inputSchema: { type: 'object', properties: { project: { type: 'string' }, channelId: { type: 'string' } }, required: ['project'] } },
   { name: 'SetProjectBindings', description: 'Set a project\'s Salesforce records, Google Drive folder, and/or DM auto-scope aliases.',
@@ -152,6 +154,7 @@ class SystemControlServer {
           case 'ListSkills': return ok(await api('GET', `/skills${q(a.scope)}`));
 
           case 'ListProjects': return ok(await api('GET', '/projects'));
+          case 'CreateProject': return ok(await api('POST', '/projects', { name: a.name }));
           case 'MapChannelToProject': return ok(await api('POST', `/projects/${encodeURIComponent(a.project)}/channels`, { channelId: a.channelId || CTX.channel }));
           case 'SetProjectBindings': return ok(await api('PUT', `/projects/${encodeURIComponent(a.project)}/bindings`, {
             salesforce: a.salesforce, drivePath: a.drivePath, aliases: a.aliases,
