@@ -10,6 +10,19 @@ import { McpManager, McpStdioServerConfig } from './mcp-manager';
 const QUERY_TIMEOUT_MS = 10 * 60 * 1000;
 const CLAUDE_SESSIONS_FILE = path.join(homedir(), '.claude', 'claude-handler-sessions.json');
 
+// Standing guidance for the interactive Slack session. Without it the model improvises when asked
+// about "my projects" — e.g. running `gh repo list` and analyzing every GitHub repo instead of the
+// projects this system actually knows about. "Projects" here means the registry exposed by the
+// system-control ListProjects tool (the workspaces under ~/claude-workspaces), nothing wider.
+const PROJECTS_SYSTEM_PROMPT = [
+  'When the user refers to "my projects", "the projects", or asks you to analyze, compare, or report',
+  'across projects, that means the projects registered in THIS system. Enumerate them with the',
+  'system-control ListProjects tool and scope your answer to exactly those projects.',
+  'Do NOT enumerate GitHub repositories (e.g. `gh repo list`) or scan the filesystem for git repos to',
+  'discover projects — the registry is the source of truth. Only look beyond the registered projects',
+  'if the user explicitly asks you to.',
+].join(' ');
+
 // Local types matching `claude --output-format stream-json` NDJSON output.
 export type SDKMessage =
   | { type: 'system'; subtype: 'init'; session_id: string; [key: string]: unknown }
@@ -180,6 +193,12 @@ export class ClaudeHandler {
       '--allowed-tools', allowedTools.join(','),
       '--model', model || 'claude-sonnet-4-6',
     ];
+
+    // Only the interactive Slack session has the system-control MCP (ListProjects). Teach it that
+    // "my projects" = the system registry, so it doesn't fall back to sweeping GitHub/the filesystem.
+    if (slackContext) {
+      args.push('--append-system-prompt', PROJECTS_SYSTEM_PROMPT);
+    }
 
     if (Object.keys(mcpServers).length > 0) {
       args.push('--mcp-config', JSON.stringify({ mcpServers }));

@@ -10,8 +10,8 @@ brew install node
 claude -p "say hi"          # confirm the Claude CLI is signed in (must return text)
 
 # 2. Clone + bootstrap — installs deps, builds, makes dirs, scaffolds .env, starts all 3 services
-git clone <your-repo-url> ~/Documents/claude-workspaces/slackbot-ai
-cd ~/Documents/claude-workspaces/slackbot-ai
+git clone <your-repo-url> ~/claude-workspaces/system
+cd ~/claude-workspaces/system
 ./scripts/bootstrap.sh
 
 # 3. Create the Slack app: copy the manifest, then api.slack.com/apps → Create New App → From a manifest → paste
@@ -30,7 +30,7 @@ Then open the dashboard → **Onboarding** tab: <http://localhost:3456/agents/#o
 each integration and has the same copy-paste steps, plus optional add-ons (Slack-read MCP, Salesforce,
 Drive, Outlook). The rest of this doc is the manual reference behind those scripts.
 
-> Notation: `<repo>` = wherever you put this checkout (e.g. `~/Documents/claude-workspaces/slackbot-ai`).
+> Notation: `<repo>` = wherever you put this checkout (the documented location is `~/claude-workspaces/system`).
 > Paths derive from `$HOME` + the repo location, so the checkout is relocatable. Steps marked **[auto]**
 > are what `./scripts/bootstrap.sh` does for you; **[manual]** steps need a human (browser sign-ins,
 > Slack app creation, macOS permission grants).

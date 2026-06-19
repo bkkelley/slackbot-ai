@@ -146,7 +146,7 @@ const GUIDE = [
     steps: [
       { title: 'Install Node ≥ 20', code: 'brew install node' },
       { title: 'Confirm the Claude CLI is signed in', body: 'The bot spawns `claude`, so its auth must work on its own. This should return text:', code: 'claude -p "say hi"' },
-      { title: 'Clone the repo', body: 'Everything else derives from this folder + $HOME.', code: 'git clone <your-repo-url> ~/Documents/claude-workspaces/slackbot-ai\ncd ~/Documents/claude-workspaces/slackbot-ai' },
+      { title: 'Clone the repo', body: 'Everything else derives from this folder + $HOME.', code: 'git clone <your-repo-url> ~/claude-workspaces/system\ncd ~/claude-workspaces/system' },
     ],
   },
   {
