@@ -58,6 +58,21 @@ export interface TaskItem {
   text: string;
 }
 
+export interface SlackSearchHit {
+  text: string;
+  user: string;
+  ts: string;
+  channelId: string;
+  channelName: string;
+  permalink: string;
+}
+
+export interface SlackChannelMessage {
+  text: string;
+  user: string;
+  ts: string;
+}
+
 export interface ChannelTransport {
   readonly platform: Platform;
   start(): Promise<void>;
@@ -88,6 +103,10 @@ export interface ChannelTransport {
   createTaskList?(name: string, grantUserId?: string): Promise<CreatedTaskList>;
   addTask?(listId: string, text: string, columnId?: string): Promise<CreatedTask>;
   listTasks?(listId: string): Promise<TaskItem[]>;
+
+  // Read-as-the-owner via a user token (Slack-only; optional; needs SLACK_USER_TOKEN)
+  searchMessages?(query: string, count?: number): Promise<SlackSearchHit[]>;
+  readChannelMessages?(channelId: string, limit?: number): Promise<SlackChannelMessage[]>;
 }
 
 export type ToolEvent =

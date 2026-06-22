@@ -139,6 +139,34 @@ const TOOLS = [
       required: ['listId'],
     },
   },
+  {
+    name: 'SearchMessages',
+    description:
+      "Search the owner's Slack messages as them (via the user token) — covers every channel/DM the owner is in, including ones the bot isn't. " +
+      'Supports Slack search syntax, e.g. `from:@me in:#standup after:2026-06-01 deploy`. Read-only. Returns text + channel + permalink per match.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Slack search query (supports in:, from:, after:, before:, etc.)' },
+        count: { type: 'number', description: 'Max results (default 20)' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'ReadChannelMessages',
+    description:
+      "Read recent messages from a channel by its ID, as the owner (via the user token) — works even if the bot isn't a member. " +
+      'Use SearchMessages to find a channelId if you only know the name. Read-only.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        channelId: { type: 'string', description: 'Slack channel ID (e.g. C0AB12CDE)' },
+        limit: { type: 'number', description: 'Max messages (default 20)' },
+      },
+      required: ['channelId'],
+    },
+  },
 ];
 
 class SlackToolsServer {
@@ -188,6 +216,14 @@ class SlackToolsServer {
           case 'ListTasks': {
             const r = await proxy('task', { op: 'list', listId: a.listId });
             return ok({ items: r.items });
+          }
+          case 'SearchMessages': {
+            const r = await proxy('read', { op: 'search', query: a.query, count: a.count });
+            return ok({ matches: r.matches });
+          }
+          case 'ReadChannelMessages': {
+            const r = await proxy('read', { op: 'history', channelId: a.channelId, limit: a.limit });
+            return ok({ messages: r.messages });
           }
           default:
             return fail(`Unknown tool: ${request.params.name}`);

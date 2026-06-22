@@ -1,4 +1,5 @@
 import { App } from '@slack/bolt';
+import { WebClient } from '@slack/web-api';
 import {
   ChannelTransport,
   IncomingMessage,
@@ -12,6 +13,8 @@ import {
   CreatedTaskList,
   CreatedTask,
   TaskItem,
+  SlackSearchHit,
+  SlackChannelMessage,
 } from '../../orchestration/types';
 import { downloadSlackFile } from './file-downloader';
 import { HELP_TEXT } from '../../orchestration/commands/help';
@@ -42,8 +45,13 @@ export class SlackTransport implements ChannelTransport {
   private channelJoinHandler: ((channelId: string) => Promise<void>) | null = null;
   private botUserId: string | null = null;
   private logger = new Logger('SlackTransport');
+  // Optional user-token client (xoxp) — reads as the owner across channels they're in. Null when
+  // SLACK_USER_TOKEN isn't set; the read tools then return a clear "not configured" error.
+  private userClient: WebClient | null;
 
-  constructor(private app: App, private botToken: string) {}
+  constructor(private app: App, private botToken: string, userToken?: string) {
+    this.userClient = userToken ? new WebClient(userToken) : null;
+  }
 
   async start(): Promise<void> {
     // no-op — app.start() is called externally
@@ -514,6 +522,42 @@ export class SlackTransport implements ChannelTransport {
     const result: any = await this.app.client.apiCall('slackLists.items.list', { list_id: listId });
     const items: any[] = result.items ?? [];
     return items.map((it) => ({ id: (it.id ?? '') as string, text: SlackTransport.extractItemText(it) }));
+  }
+
+  // --- Read-as-the-owner (user token) ---
+  // These use the xoxp user token, so they see every channel the owner is in (incl. ones the bot
+  // isn't) and can run search.messages (impossible with a bot token). Read-only.
+  private requireUserClient(): WebClient {
+    if (!this.userClient) {
+      throw new Error(
+        'Slack user token not configured. Set SLACK_USER_TOKEN (xoxp-…) in .env — add user scopes ' +
+          '(search:read, channels:history, groups:history, im:history) to the app, reinstall, and paste the User OAuth Token.'
+      );
+    }
+    return this.userClient;
+  }
+
+  // Slack search syntax works here, e.g. `from:@me in:#standup after:2026-06-01 deploy`.
+  async searchMessages(query: string, count = 20): Promise<SlackSearchHit[]> {
+    const r: any = await this.requireUserClient().search.messages({ query, count, sort: 'timestamp' });
+    return (r.messages?.matches ?? []).map((m: any) => ({
+      text: (m.text ?? '') as string,
+      user: (m.username ?? m.user ?? '') as string,
+      ts: (m.ts ?? '') as string,
+      channelId: (m.channel?.id ?? '') as string,
+      channelName: (m.channel?.name ?? '') as string,
+      permalink: (m.permalink ?? '') as string,
+    }));
+  }
+
+  // Recent messages from a channel the owner is in (by channel ID). Works even if the bot isn't a member.
+  async readChannelMessages(channelId: string, limit = 20): Promise<SlackChannelMessage[]> {
+    const r: any = await this.requireUserClient().conversations.history({ channel: channelId, limit });
+    return (r.messages ?? []).map((m: any) => ({
+      text: (m.text ?? '') as string,
+      user: (m.user ?? m.username ?? '') as string,
+      ts: (m.ts ?? '') as string,
+    }));
   }
 
   // Best-effort: pull plain text out of a list item's first rich_text field.

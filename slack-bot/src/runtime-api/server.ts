@@ -295,6 +295,38 @@ export class RuntimeApiServer {
       return;
     }
 
+    // Read-as-the-owner via the user token (search / channel history).
+    if (url === '/api/transport-proxy/read') {
+      if (!transport.searchMessages || !transport.readChannelMessages) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'user-token reads unsupported for this transport' }));
+        return;
+      }
+      try {
+        const { op, query, channelId, limit, count } = body as {
+          op: 'search' | 'history'; query?: string; channelId?: string; limit?: number; count?: number;
+        };
+        if (op === 'search') {
+          if (!query) throw new Error('query is required');
+          const matches = await transport.searchMessages(query, count);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, matches }));
+        } else if (op === 'history') {
+          if (!channelId) throw new Error('channelId is required');
+          const messages = await transport.readChannelMessages(channelId, limit);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, messages }));
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: `Unknown read op: ${op}` }));
+        }
+      } catch (err: any) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: err?.message ?? String(err) }));
+      }
+      return;
+    }
+
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: false, error: 'Not found' }));
   }

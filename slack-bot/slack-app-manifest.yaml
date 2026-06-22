@@ -39,6 +39,17 @@ oauth_config:
       - links:read
       - pins:read
       - pins:write
+    user:
+      # User token (xoxp) — read as the owner across the channels they're in (incl. ones the bot
+      # isn't). Powers SearchMessages / ReadChannelMessages. Read-only; never used to post as the user.
+      - search:read
+      - channels:history
+      - channels:read
+      - groups:history
+      - groups:read
+      - im:history
+      - mpim:history
+      - users:read
 settings:
   event_subscriptions:
     bot_events:

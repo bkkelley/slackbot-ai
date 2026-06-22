@@ -43,7 +43,7 @@ async function start() {
     const claudeHandler = new ClaudeHandler(mcpManager, ipcPort);
 
     // Slack transport + formatter → message processor
-    const transport = new SlackTransport(app, config.slack.botToken);
+    const transport = new SlackTransport(app, config.slack.botToken, config.slack.userToken);
     const formatter = new SlackFormatter();
     const processor = new MessageProcessor(transport, formatter, claudeHandler, mcpManager);
 
