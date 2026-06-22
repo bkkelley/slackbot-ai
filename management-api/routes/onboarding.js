@@ -82,6 +82,25 @@ async function checkSlackMcp() {
     'Run: claude mcp add --transport http --scope user slack https://mcp.slack.com/mcp  — then claude → /mcp → slack → Authenticate');
 }
 
+// Optional user token (xoxp) — powers SearchMessages / ReadChannelMessages (read as the owner).
+async function checkSlackUserToken() {
+  const L = 'Slack user token (read as you)';
+  const token = readEnvFlag('SLACK_USER_TOKEN');
+  if (!token) return item('slack_user_token', L, 'warn', 'not configured (optional)',
+    'Add user scopes + reinstall, then: ./scripts/set-slack-creds.sh <xoxb> <xapp> <U-id> <xoxp-user-token>');
+  if (!token.startsWith('xoxp-')) return item('slack_user_token', L, 'error',
+    'value is not a User OAuth Token (should start with xoxp-)', 'Copy the User OAuth Token from OAuth & Permissions.');
+  try {
+    const r = await fetch('https://slack.com/api/auth.test', { headers: { Authorization: `Bearer ${token}` } });
+    const j = await r.json();
+    if (j.ok) return item('slack_user_token', L, 'ok', `connected as ${j.user || j.user_id}`);
+    return item('slack_user_token', L, 'error', `token rejected: ${j.error}`,
+      'Re-issue the User OAuth Token (reinstall) and update SLACK_USER_TOKEN.');
+  } catch (e) {
+    return item('slack_user_token', L, 'error', `check failed: ${e.message}`, '');
+  }
+}
+
 async function checkSalesforce() {
   const v = await sh('sf', ['--version'], 8000);
   if (!v.ok) return item('salesforce', 'Salesforce CLI + orgs', 'missing', 'sf not installed', 'npm install -g @salesforce/cli');
@@ -174,6 +193,15 @@ const GUIDE = [
     ],
   },
   {
+    id: 'slack_user_token', label: 'Read your Slack as you (user token)', check: 'slack_user_token', optional: true,
+    why: 'Lets the bot search/read your Slack across every channel you\'re in — including ones the bot isn\'t a member of — via the SearchMessages / ReadChannelMessages tools. Read-only; it never posts as you. Works headlessly (unlike the OAuth-based Slack MCP above).',
+    steps: [
+      { title: 'Add User Token Scopes', body: 'api.slack.com/apps → your app → OAuth & Permissions → User Token Scopes: add search:read, channels:history, channels:read, groups:history, groups:read, im:history, mpim:history, users:read.' },
+      { title: 'Reinstall + copy the User OAuth Token', body: 'Reinstall to Workspace, then copy the token starting with xoxp-.' },
+      { title: 'Save it (writes .env + restarts the bot)', code: './scripts/set-slack-creds.sh <xoxb-bot> <xapp-app> <U-member-id> <xoxp-user-token>' },
+    ],
+  },
+  {
     id: 'salesforce', label: 'Salesforce orgs', check: 'salesforce',
     why: 'Lets the bot query/describe orgs via the sf CLI. Authenticate each org once; tokens are machine-wide so the bot reuses them.',
     steps: [
@@ -225,7 +253,7 @@ router.get('/status', async (req, res) => {
   try {
     if (_cache.data && Date.now() - _cache.at < 20000 && !req.query.fresh) return res.json(_cache.data);
     const items = await Promise.all([
-      checkServices(), checkSlackScopes(), checkSlackMcp(), checkSalesforce(), Promise.resolve(checkDrive()), checkOutlook(), checkMemory(),
+      checkServices(), checkSlackScopes(), checkSlackMcp(), checkSlackUserToken(), checkSalesforce(), Promise.resolve(checkDrive()), checkOutlook(), checkMemory(),
     ]);
     const summary = { ok: items.filter((c) => c.status === 'ok').length, warn: items.filter((c) => c.status === 'warn').length, missing: items.filter((c) => c.status === 'missing' || c.status === 'error').length, total: items.length };
     _cache = { at: Date.now(), data: { items, summary } };
@@ -236,6 +264,7 @@ router.get('/status', async (req, res) => {
 // GET /status/:id — re-run a single integration check (used by the wizard's "Verify now")
 const CHECKS = {
   services: checkServices, slack_app: checkSlackScopes, slack_mcp: checkSlackMcp,
+  slack_user_token: checkSlackUserToken,
   salesforce: checkSalesforce, drive: () => Promise.resolve(checkDrive()), outlook: checkOutlook,
   memory: checkMemory,
 };
