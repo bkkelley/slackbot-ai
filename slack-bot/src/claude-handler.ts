@@ -23,6 +23,16 @@ const PROJECTS_SYSTEM_PROMPT = [
   'if the user explicitly asks you to.',
 ].join(' ');
 
+// Route vague "what's going on with me today" questions to the data sources that actually answer
+// them, rather than concluding you have no access. The outlook skill (calendar + inbox) is available.
+const AGENDA_SYSTEM_PROMPT = [
+  'When the user asks what is on their plate / their day / agenda / schedule / "what do I have today",',
+  'or asks about meetings, calendar, or email, use the `outlook` skill (via the Skill tool) — it reads',
+  'their calendar and inbox locally. Do NOT claim you lack calendar or email access before trying it.',
+  'For tasks specifically, a Slack List must be named ($tasks). It reads the owner\'s signed-in Outlook,',
+  'so it only reflects the owner — note that if someone else is asking.',
+].join(' ');
+
 // Local types matching `claude --output-format stream-json` NDJSON output.
 export type SDKMessage =
   | { type: 'system'; subtype: 'init'; session_id: string; [key: string]: unknown }
@@ -197,7 +207,7 @@ export class ClaudeHandler {
     // Only the interactive Slack session has the system-control MCP (ListProjects). Teach it that
     // "my projects" = the system registry, so it doesn't fall back to sweeping GitHub/the filesystem.
     if (slackContext) {
-      args.push('--append-system-prompt', PROJECTS_SYSTEM_PROMPT);
+      args.push('--append-system-prompt', `${PROJECTS_SYSTEM_PROMPT}\n\n${AGENDA_SYSTEM_PROMPT}`);
     }
 
     if (Object.keys(mcpServers).length > 0) {
