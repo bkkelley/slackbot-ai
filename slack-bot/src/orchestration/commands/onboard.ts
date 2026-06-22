@@ -4,11 +4,11 @@ import { loadChannelProjects } from '../channel-projects';
 const MGMT = `http://127.0.0.1:${process.env.MANAGEMENT_PORT || 3456}/agents/api`;
 
 /**
- * `$onboard` (bare) — falls through to the Claude session, which runs the conversational `onboard`
+ * `onboard` (bare) — falls through to the Claude session, which runs the conversational `onboard`
  *   skill and walks the user through setup one step at a time (see message-processor handoff).
- * `$onboard status` — quick one-shot readiness dump using the management-api's onboarding engine
+ * `onboard status` — quick one-shot readiness dump using the management-api's onboarding engine
  *   (single source of truth, shared with the dashboard).
- * `$remember <preference>` — capture a durable working preference into the project's CLAUDE.md
+ * `remember <preference>` — capture a durable working preference into the project's CLAUDE.md
  *   (or global in a DM) so the bot follows it going forward.
  */
 export class OnboardCommand {
@@ -17,11 +17,11 @@ export class OnboardCommand {
     const t = text.trim();
     const reply = (m: string) => say({ text: m, thread_ts: thread_ts || ts });
 
-    // $remember <preference>
-    if (/^\$remember(\s|$)/i.test(t)) {
-      const pref = t.replace(/^\$remember\s*/i, '').trim();
+    // remember <preference>
+    if (/^remember(\s|$)/i.test(t)) {
+      const pref = t.replace(/^remember\s*/i, '').trim();
       if (!pref) {
-        await reply('Usage: `$remember <preference>` — e.g. `$remember track tasks as markdown files in tasks/`. Saved to this channel’s project CLAUDE.md (or global from a DM).');
+        await reply('Usage: `remember <preference>` — e.g. `remember track tasks as markdown files in tasks/`. Saved to this channel’s project CLAUDE.md (or global from a DM).');
         return true;
       }
       const proj = loadChannelProjects()[channel];
@@ -41,9 +41,9 @@ export class OnboardCommand {
       return true;
     }
 
-    // $onboard status — quick one-shot dump. (Bare `$onboard` returns false below so the Claude
+    // `onboard status` — quick one-shot dump. (Bare `onboard` returns false below so the Claude
     // session can run the conversational `onboard` skill instead.)
-    if (/^\$onboard\s+status\b/i.test(t)) {
+    if (/^onboard\s+status\b/i.test(t)) {
       await reply('🚀 Checking your setup…');
       try {
         const r = await fetch(`${MGMT}/onboarding/status?fresh=1`);
@@ -55,8 +55,8 @@ export class OnboardCommand {
         const s = data.summary || {};
         const next = [
           '*Next steps:*',
-          '• Map a project here: `$project map <name>`, then `$project sf <org> <AccountId> <Project__cId>` and `$project drive <path>`',
-          '• Capture a working preference: `$remember <how you like to work>`',
+          '• Map a project here: `project map <name>`, then `project sf <org> <AccountId> <Project__cId>` and `project drive <path>`',
+          '• Capture a working preference: `remember <how you like to work>`',
           `• Step-by-step setup for anything not ready: the *Onboarding* tab → ${process.env.PUBLIC_BASE_URL || 'http://localhost:3456'}/agents/#onboarding`,
         ].join('\n');
         await reply(`*Setup status — ${s.ok || 0}/${s.total || 0} ready*\n\n${lines.join('\n')}\n\n${next}`);

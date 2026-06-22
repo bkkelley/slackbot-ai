@@ -36,9 +36,9 @@ export class AgentsCommand {
       return true;
     }
 
-    if (!/^\$agents(\s+.*)?$/i.test(text.trim())) return false;
+    if (!/^agents(\s+.*)?$/i.test(text.trim())) return false;
 
-    const sub = text.trim().replace(/^\$agents\s*/i, '').trim();
+    const sub = text.trim().replace(/^agents\s*/i, '').trim();
 
     if (!sub || sub === 'list') {
       await say({ text: this.formatAgentsList(), thread_ts: thread_ts || ts });
@@ -74,7 +74,7 @@ export class AgentsCommand {
     }
 
     await say({
-      text: `*Agent commands:*\n• \`$agents list\` — list all agents\n• \`$agents create\` — create a new agent\n• \`$agents delete <name>\` — delete an agent\n• \`$agents run <name> <action> [--files <path>]\` — dispatch an agent action\n\nOr manage at http://localhost:3456/agents/`,
+      text: `*Agent commands:*\n• \`agents list\` — list all agents\n• \`agents create\` — create a new agent\n• \`agents delete <name>\` — delete an agent\n• \`agents run <name> <action> [--files <path>]\` — dispatch an agent action\n\nOr manage at http://localhost:3456/agents/`,
       thread_ts: thread_ts || ts,
     });
     return true;
@@ -146,7 +146,7 @@ export class AgentsCommand {
           `  Model: \`${modelLabel}\``,
           `  Agent: \`~/.claude/agents/${name}.md\``,
           `  Workspace: \`claude-workspaces/${name!.toLowerCase()}/\``,
-          `\nWant to schedule it? Run \`$jobs create\` to set up a recurring job.`,
+          `\nWant to schedule it? Run \`jobs create\` to set up a recurring job.`,
         ].join('\n'),
         thread_ts: thread_ts || ts,
       });

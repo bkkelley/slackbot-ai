@@ -209,7 +209,7 @@ export class MessageProcessor {
     // session, which runs the interactive `onboard` skill. (`$onboard status` is handled earlier by
     // OnboardCommand as a quick one-shot dump.)
     const isOnboard =
-      /^\$onboard\s*$/i.test(promptText.trim()) ||
+      /^onboard\s*$/i.test(promptText.trim()) ||
       /^(onboard me|help me (set ?up|onboard)|walk me through (the )?set ?up)\b/i.test(promptText.trim());
     if (isOnboard) {
       promptText = onboardPrompt();

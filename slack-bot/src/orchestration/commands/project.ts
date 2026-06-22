@@ -15,37 +15,37 @@ import {
 } from '../channel-projects';
 
 /**
- * `$project` — manage a channel's project and its cross-system bindings. A mapped channel makes the
+ * `project` — manage a channel's project and its cross-system bindings. A mapped channel makes the
  * bot run Claude in that project's directory, with a context preamble carrying the project's
  * Salesforce records and Google Drive folder.
  *
- *   $project                          show this channel's project + bindings
- *   $project map <name>               map this channel to project <name> (or an absolute path)
- *   $project unmap                    remove this channel's mapping
- *   $project list                     list known project folders
- *   $project sf <org> <acctId> <projId>   bind the Salesforce org + Account + Project__c
- *   $project drive <absolute path>    bind the Google Drive folder (local synced path)
- *   $project alias <names>            extra names that auto-scope a DM to this project
+ *   project                          show this channel's project + bindings
+ *   project map <name>               map this channel to project <name> (or an absolute path)
+ *   project unmap                    remove this channel's mapping
+ *   project list                     list known project folders
+ *   project sf <org> <acctId> <projId>   bind the Salesforce org + Account + Project__c
+ *   project drive <absolute path>    bind the Google Drive folder (local synced path)
+ *   project alias <names>            extra names that auto-scope a DM to this project
  */
 export class ProjectCommand {
   async handle(ctx: CommandContext): Promise<boolean> {
     const { text, channel, thread_ts, ts, say } = ctx;
     const trimmed = text.trim();
-    if (!/^\$project(\s|$)/i.test(trimmed)) return false;
+    if (!/^project(\s|$)/i.test(trimmed)) return false;
 
     const reply = (t: string) => say({ text: t, thread_ts: thread_ts || ts });
-    const arg = trimmed.slice('$project'.length).trim();
+    const arg = trimmed.slice('project'.length).trim();
     const isDM = channel.startsWith('D');
     const currentProject = () => loadChannelProjects()[channel];
 
-    // $project list
+    // project list
     if (/^list$/i.test(arg)) {
       const projects = listProjects();
       await reply(projects.length ? `*Projects:*\n${projects.map((p) => `• \`${p}\``).join('\n')}` : '_No project folders yet._');
       return true;
     }
 
-    // $project map <name>
+    // project map <name>
     if (/^map(\s|$)/i.test(arg)) {
       if (isDM) {
         await reply('Channel mapping only works in a channel. In a DM, start a message with `project: <name>` to scope this thread.');
@@ -53,7 +53,7 @@ export class ProjectCommand {
       }
       const name = sanitizeProject(arg.replace(/^map\s*/i, ''));
       if (!name) {
-        await reply('Usage: `$project map <name>` — e.g. `$project map acme-api` (or an absolute path).');
+        await reply('Usage: `project map <name>` — e.g. `project map acme-api` (or an absolute path).');
         return true;
       }
       const map = loadChannelProjects();
@@ -65,11 +65,11 @@ export class ProjectCommand {
         await reply(`⚠️ Couldn't save the mapping (${String(err).slice(0, 120)}).`);
         return true;
       }
-      await reply(`✅ Mapped this channel → 📁 *${name}*\nWorking dir: \`${projectDir(name)}\`\nNow bind its systems: \`$project sf <org> <accountId> <projectId>\` and \`$project drive <path>\`.`);
+      await reply(`✅ Mapped this channel → 📁 *${name}*\nWorking dir: \`${projectDir(name)}\`\nNow bind its systems: \`project sf <org> <accountId> <projectId>\` and \`project drive <path>\`.`);
       return true;
     }
 
-    // $project unmap
+    // project unmap
     if (/^unmap$/i.test(arg)) {
       const map = loadChannelProjects();
       if (!map[channel]) {
@@ -87,16 +87,16 @@ export class ProjectCommand {
       return true;
     }
 
-    // $project sf <org> <accountId> <projectId>
+    // project sf <org> <accountId> <projectId>
     if (/^sf(\s|$)/i.test(arg)) {
       const proj = currentProject();
       if (!proj) {
-        await reply('Map this channel to a project first: `$project map <name>`.');
+        await reply('Map this channel to a project first: `project map <name>`.');
         return true;
       }
       const [org, acct, projId] = arg.replace(/^sf\s*/i, '').trim().split(/\s+/);
       if (!org || !acct || !projId) {
-        await reply('Usage: `$project sf <org-alias> <AccountId> <Project__cId>` — paste the 15/18-char record IDs from Salesforce.');
+        await reply('Usage: `project sf <org-alias> <AccountId> <Project__cId>` — paste the 15/18-char record IDs from Salesforce.');
         return true;
       }
       if (!isSalesforceId(acct) || !isSalesforceId(projId)) {
@@ -113,16 +113,16 @@ export class ProjectCommand {
       return true;
     }
 
-    // $project drive <path>
+    // project drive <path>
     if (/^drive(\s|$)/i.test(arg)) {
       const proj = currentProject();
       if (!proj) {
-        await reply('Map this channel to a project first: `$project map <name>`.');
+        await reply('Map this channel to a project first: `project map <name>`.');
         return true;
       }
       const p = arg.replace(/^drive\s*/i, '').trim().replace(/^["']|["']$/g, '');
       if (!p || !p.startsWith('/')) {
-        await reply('Usage: `$project drive <absolute path>` — e.g. the synced Google Drive folder `/Users/you/Library/CloudStorage/GoogleDrive-…/My Drive/Clients/Acme`.');
+        await reply('Usage: `project drive <absolute path>` — e.g. the synced Google Drive folder `/Users/you/Library/CloudStorage/GoogleDrive-…/My Drive/Clients/Acme`.');
         return true;
       }
       try {
@@ -136,17 +136,17 @@ export class ProjectCommand {
       return true;
     }
 
-    // $project alias [<comma-separated names>]
+    // project alias [<comma-separated names>]
     if (/^alias(\s|$)/i.test(arg)) {
       const proj = currentProject();
       if (!proj) {
-        await reply('Map this channel to a project first: `$project map <name>`.');
+        await reply('Map this channel to a project first: `project map <name>`.');
         return true;
       }
       const rest = arg.replace(/^alias\s*/i, '').trim();
       if (!rest) {
         const m = loadManifest(proj);
-        await reply(`Aliases for *${proj}*: ${m.aliases && m.aliases.length ? m.aliases.map((a) => `\`${a}\``).join(', ') : '_none_'}\nSet with \`$project alias grx, good rx\` — mentioning any of these in a DM auto-scopes to *${proj}*.`);
+        await reply(`Aliases for *${proj}*: ${m.aliases && m.aliases.length ? m.aliases.map((a) => `\`${a}\``).join(', ') : '_none_'}\nSet with \`project alias grx, good rx\` — mentioning any of these in a DM auto-scopes to *${proj}*.`);
         return true;
       }
       const aliases = rest.split(',').map((a) => a.trim()).filter(Boolean);
@@ -160,7 +160,7 @@ export class ProjectCommand {
       return true;
     }
 
-    // $project (show)
+    // project (show)
     const proj = currentProject();
     if (proj) {
       const m = loadManifest(proj);
@@ -168,16 +168,16 @@ export class ProjectCommand {
       if (m.salesforce && (m.salesforce.accountId || m.salesforce.projectId)) {
         lines.push(`Salesforce: org \`${m.salesforce.org ?? '?'}\` · Account \`${m.salesforce.accountId ?? '—'}\` · Project__c \`${m.salesforce.projectId ?? '—'}\``);
       } else {
-        lines.push('Salesforce: _not bound_ — `$project sf <org> <accountId> <projectId>`');
+        lines.push('Salesforce: _not bound_ — `project sf <org> <accountId> <projectId>`');
       }
-      lines.push(m.drivePath ? `Drive: \`${m.drivePath}\`` : 'Drive: _not bound_ — `$project drive <path>`');
-      lines.push(m.aliases && m.aliases.length ? `Aliases: ${m.aliases.map((a) => `\`${a}\``).join(', ')}` : 'Aliases: _none_ — `$project alias <names>` (auto-scope DMs)');
+      lines.push(m.drivePath ? `Drive: \`${m.drivePath}\`` : 'Drive: _not bound_ — `project drive <path>`');
+      lines.push(m.aliases && m.aliases.length ? `Aliases: ${m.aliases.map((a) => `\`${a}\``).join(', ')}` : 'Aliases: _none_ — `project alias <names>` (auto-scope DMs)');
       if (m.channels && m.channels.length) lines.push(`Channels: ${m.channels.map((c) => `<#${c}>`).join(' ')}`);
       await reply(lines.join('\n'));
     } else if (isDM) {
       await reply('This DM uses the *general* workspace. Just mention a client name and I\'ll scope to it, or start a message with `project: <name>`.');
     } else {
-      await reply('This channel isn’t mapped — it uses the *general* workspace.\nMap it with `$project map <name>` (or via the App Home tab), then bind `$project sf …` and `$project drive …`.');
+      await reply('This channel isn’t mapped — it uses the *general* workspace.\nMap it with `project map <name>` (or via the App Home tab), then bind `project sf …` and `project drive …`.');
     }
     return true;
   }

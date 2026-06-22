@@ -33,7 +33,7 @@ interface CreateSession {
 }
 
 /**
- * $workflows — list / run / delete / create global workflows from Slack.
+ * workflows — list / run / delete / create global workflows from Slack.
  * Workflows are stored as YAML+markdown at VAULT_PATH/_workflows/<name>.md (global scope).
  * Running posts results back to the current channel/thread via the runtime.
  */
@@ -56,9 +56,9 @@ export class WorkflowsCommand {
     }
 
     const trimmed = text.trim();
-    if (!/^\$workflows(\s+.*)?$/i.test(trimmed)) return false;
+    if (!/^workflows(\s+.*)?$/i.test(trimmed)) return false;
 
-    const sub = trimmed.replace(/^\$workflows\s*/i, '').trim();
+    const sub = trimmed.replace(/^workflows\s*/i, '').trim();
 
     if (!sub || /^list$/i.test(sub)) {
       await say({ text: this.formatWorkflowsList(), thread_ts: thread_ts || ts });
@@ -84,11 +84,11 @@ export class WorkflowsCommand {
 
     await say({
       text: [
-        '*$workflows commands:*',
-        '`$workflows list` — list workflows',
-        '`$workflows run <name> [sync|async]` — run a workflow (default async)',
-        '`$workflows create` — author a workflow step-by-step',
-        '`$workflows delete <name>` — delete a global workflow',
+        '*workflows commands:*',
+        '`workflows list` — list workflows',
+        '`workflows run <name> [sync|async]` — run a workflow (default async)',
+        '`workflows create` — author a workflow step-by-step',
+        '`workflows delete <name>` — delete a global workflow',
       ].join('\n'),
       thread_ts: thread_ts || ts,
     });
@@ -126,7 +126,7 @@ export class WorkflowsCommand {
     }
 
     const total = groups.reduce((n, g) => n + g.items.length, 0);
-    if (total === 0) return '📭 No workflows found. Create one with `$workflows create`.';
+    if (total === 0) return '📭 No workflows found. Create one with `workflows create`.';
 
     const parts: string[] = ['🔁 *Workflows*'];
     for (const g of groups) {
@@ -134,7 +134,7 @@ export class WorkflowsCommand {
       parts.push(`\n*${g.label}:*`);
       parts.push(...g.items.map((w) => `• \`${w.name}\` — ${w.steps} step${w.steps === 1 ? '' : 's'}`));
     }
-    parts.push('\nRun one with `$workflows run <name>`.');
+    parts.push('\nRun one with `workflows run <name>`.');
     return parts.join('\n');
   }
 
@@ -269,7 +269,7 @@ export class WorkflowsCommand {
         const agents = this.getAgentNames();
         if (agents.length === 0) {
           this.sessions.delete(key);
-          await say({ text: `❌ No agents found. Create one with \`$agents create\` first.`, thread_ts: thread_ts || ts });
+          await say({ text: `❌ No agents found. Create one with \`agents create\` first.`, thread_ts: thread_ts || ts });
           return;
         }
         session.data.agents = agents;
@@ -365,7 +365,7 @@ export class WorkflowsCommand {
         `✅ *Workflow created:* \`${name}\``,
         stepList,
         '',
-        `Run it with \`$workflows run ${name}\`.`,
+        `Run it with \`workflows run ${name}\`.`,
       ].join('\n'),
       thread_ts: thread_ts || ts,
     });

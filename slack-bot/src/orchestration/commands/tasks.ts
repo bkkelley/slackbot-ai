@@ -3,8 +3,8 @@ import { Logger } from '../../logger';
 import { CommandContext } from './types';
 
 /**
- * $tasks — manage Slack Lists (tasks) from Slack. Requires lists:write/lists:read scopes and a
- * PAID Slack plan. Stateless: operates on explicit list IDs (returned by `$tasks create`).
+ * tasks — manage Slack Lists (tasks) from Slack. Requires lists:write/lists:read scopes and a
+ * PAID Slack plan. Stateless: operates on explicit list IDs (returned by `tasks create`).
  * Per-channel default-list mapping is a future enhancement.
  */
 export class TasksCommand {
@@ -15,9 +15,9 @@ export class TasksCommand {
   async handle(ctx: CommandContext): Promise<boolean> {
     const { text, thread_ts, ts, say } = ctx;
     const trimmed = text.trim();
-    if (!/^\$tasks(\s+.*)?$/i.test(trimmed)) return false;
+    if (!/^tasks(\s+.*)?$/i.test(trimmed)) return false;
 
-    const sub = trimmed.replace(/^\$tasks\s*/i, '').trim();
+    const sub = trimmed.replace(/^tasks\s*/i, '').trim();
 
     if (!this.transport.createTaskList || !this.transport.addTask || !this.transport.listTasks) {
       await say({ text: '❌ Tasks (Slack Lists) aren’t supported on this transport.', thread_ts: thread_ts || ts });
@@ -31,7 +31,7 @@ export class TasksCommand {
         const link = result.permalink ? `\n🔗 ${result.permalink}` : '';
         const col = result.primaryColumnId ?? '';
         await say({
-          text: `✅ Created list *${createMatch[1].trim()}*.${link}\nList ID: \`${result.listId}\`\nColumn ID: \`${col}\`\n\nAdd to it with \`$tasks add ${result.listId} ${col} <task>\`.`,
+          text: `✅ Created list *${createMatch[1].trim()}*.${link}\nList ID: \`${result.listId}\`\nColumn ID: \`${col}\`\n\nAdd to it with \`tasks add ${result.listId} ${col} <task>\`.`,
           thread_ts: thread_ts || ts,
         });
       } catch (err) {
@@ -40,8 +40,8 @@ export class TasksCommand {
       return true;
     }
 
-    // `$tasks add <listId> <columnId> <task>` — Slack only returns a list's column schema at
-    // creation time (no read-back API), so the columnId from `$tasks create` must be supplied.
+    // `tasks add <listId> <columnId> <task>` — Slack only returns a list's column schema at
+    // creation time (no read-back API), so the columnId from `tasks create` must be supplied.
     const addMatch = sub.match(/^add\s+(\S+)\s+(\S+)\s+(.+)$/i);
     if (addMatch) {
       try {
@@ -71,10 +71,10 @@ export class TasksCommand {
 
     await say({
       text: [
-        '*$tasks commands* _(Slack Lists — requires a paid plan)_:',
-        '`$tasks create <name>` — create a task list (returns its ID + column ID)',
-        '`$tasks add <listId> <columnId> <task>` — add a task',
-        '`$tasks list <listId>` — show tasks in a list',
+        '*tasks commands* _(Slack Lists — requires a paid plan)_:',
+        '`tasks create <name>` — create a task list (returns its ID + column ID)',
+        '`tasks add <listId> <columnId> <task>` — add a task',
+        '`tasks list <listId>` — show tasks in a list',
       ].join('\n'),
       thread_ts: thread_ts || ts,
     });

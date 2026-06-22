@@ -1,66 +1,59 @@
 import { CommandContext } from './types';
 
-export const HELP_TEXT = `*Commands*
+const DASHBOARD_URL = `${process.env.PUBLIC_BASE_URL || 'http://localhost:3456'}/agents/`;
+
+export const HELP_TEXT = `*🗂 Command palette*
+Send one of these as a normal bot message in this channel or thread.
 
 *Setup*
-\`$onboard\` — walk through setup conversationally, one step at a time
-\`$onboard status\` — quick integration readiness check
-\`$remember <preference>\` — save a working preference to this project's CLAUDE.md
+• *Onboard* — \`onboard\`
+   Walk through setup conversationally, one step at a time. (\`onboard status\` for a quick readiness check.)
+• *Remember* — \`remember <preference>\`
+   Save a working preference to this project's CLAUDE.md.
 
 *Agents*
-\`$agents list\` — list all agents with status and model
-\`$agents create\` — conversational multi-step agent creation
-\`$agents delete <name>\` — remove an agent
-\`$agents run <name> <action>\` — dispatch an agent action (e.g. \`$agents run Sage "Morning Nudge"\`)
+• *Agents* — \`agents list\` · \`agents create\` · \`agents run <name> <action>\` · \`agents delete <name>\`
+   List, create, run, or remove agents.
 
 *Jobs*
-\`$jobs\` — list scheduled jobs
-\`$jobs create\` — create a new scheduled job (conversational)
-\`$jobs cancel <id>\` — disable a job
-\`$schedule <plain English>\` — create a one-time or recurring job (e.g. \`$schedule every day at 9am remind me to review PRs\`)
+• *Jobs* — \`jobs\` · \`jobs create\` · \`jobs cancel <id>\`
+   List, create, or cancel scheduled jobs.
+• *Schedule* — \`schedule <plain English>\`
+   Create a recurring job (e.g. \`schedule every day at 9am post the standup\`).
 
 *Projects*
-\`$project\` — show this channel's project + bindings
-\`$project map <name>\` — map this channel to a project (Claude runs there)
-\`$project unmap\` — remove this channel's mapping
-\`$project list\` — list known projects
-\`$project sf <org> <AccountId> <Project__cId>\` — bind the Salesforce org + records
-\`$project drive <absolute path>\` — bind the Google Drive folder
-\`$project alias <names>\` — extra names that auto-scope a DM to this project
-_In a DM, just mention a client name to scope to it (or start with \`project: <name>\`)._
+• *Project* — \`project\` · \`project map <name>\` · \`project unmap\` · \`project list\`
+   Show or map this channel's project. Also \`project sf <org> <AccountId> <Project__cId>\`, \`project drive <path>\`, \`project alias <names>\`.
+   _In a DM, just mention a client name to scope to it (or start with \`project: <name>\`)._
 
 *Model*
-\`model haiku|sonnet|opus\` — set the model for this conversation
-\`model reset\` — revert to the default model
+• *Model* — \`model haiku|sonnet|opus\` · \`model reset\`
+   Set the model for this conversation.
 
 *MCP*
-\`mcp\` — list configured MCP servers
-\`mcp reload\` — reload mcp-servers.json without restarting
+• *MCP* — \`mcp\` · \`mcp reload\`
+   List or reload configured MCP servers.
 
 *Skills*
-\`$skills list\` — list installed skills
-\`$skills add <package>\` — install a skill (e.g. \`$skills add anthropic/claude-code-skills\`)
-\`$skills remove <name>\` — uninstall a skill
+• *Skills* — \`skills list\` · \`skills add <package>\` · \`skills remove <name>\`
+   Manage installed Claude skills.
 
 *Workflows*
-\`$workflows list\` — list workflows
-\`$workflows run <name> [sync|async]\` — run a workflow (default async)
-\`$workflows create\` — author a workflow step-by-step
-\`$workflows delete <name>\` — delete a global workflow
+• *Workflows* — \`workflows list\` · \`workflows run <name> [sync|async]\` · \`workflows create\` · \`workflows delete <name>\`
+   List, run, author, or delete workflows.
 
 *Tasks* _(Slack Lists — paid plan)_
-\`$tasks create <name>\` — create a task list (returns its ID + column ID)
-\`$tasks add <listId> <columnId> <task>\` — add a task
-\`$tasks list <listId>\` — show tasks in a list
+• *Tasks* — \`tasks create <name>\` · \`tasks add <listId> <columnId> <task>\` · \`tasks list <listId>\`
+   Manage Slack list tasks.
 
 *Help*
-\`$help\` — show this message
+• *Help* — \`help\` (or the \`/commands\` slash command) — show this palette.
 
-Manage agents and jobs at http://localhost:3456/agents/`;
+Manage agents & jobs at ${DASHBOARD_URL}`;
 
 export class HelpCommand {
   async handle(ctx: CommandContext): Promise<boolean> {
-    if (!/^\$help$/i.test(ctx.text.trim())) return false;
+    if (!/^(help|commands)$/i.test(ctx.text.trim())) return false;
     await ctx.say({ text: HELP_TEXT, thread_ts: ctx.thread_ts || ctx.ts });
     return true;
   }

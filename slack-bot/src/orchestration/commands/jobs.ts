@@ -47,17 +47,17 @@ export class JobsCommand {
       return true;
     }
 
-    if (/^\$jobs(\s+(list|status))?$/i.test(text.trim())) {
+    if (/^jobs(\s+(list|status))?$/i.test(text.trim())) {
       await say({ text: this.formatJobsList(), thread_ts: thread_ts || ts });
       return true;
     }
 
-    if (/^\$jobs\s+create$/i.test(text.trim())) {
+    if (/^jobs\s+create$/i.test(text.trim())) {
       await this.startCreateSession(ctx, key);
       return true;
     }
 
-    const cancelMatch = text.trim().match(/^\$jobs\s+cancel\s+([a-f0-9-]+)$/i);
+    const cancelMatch = text.trim().match(/^jobs\s+cancel\s+([a-f0-9-]+)$/i);
     if (cancelMatch) {
       const result = this.cancelJob(cancelMatch[1]);
       await say({
@@ -69,7 +69,7 @@ export class JobsCommand {
       return true;
     }
 
-    const scheduleMatch = text.match(/^\$schedule\s+(.+)/is);
+    const scheduleMatch = text.match(/^schedule\s+(.+)/is);
     if (scheduleMatch) {
       const scheduleText = scheduleMatch[1].trim();
       const workingDir = resolveProject(channel).dir
@@ -105,7 +105,7 @@ export class JobsCommand {
     const { thread_ts, ts, say } = ctx;
     const agents = this.getAgentNames();
     if (agents.length === 0) {
-      await say({ text: `❌ No agents found. Create one first with \`$agents create\`.`, thread_ts: thread_ts || ts });
+      await say({ text: `❌ No agents found. Create one first with \`agents create\`.`, thread_ts: thread_ts || ts });
       return;
     }
     this.createSessions.set(key, { step: 'description', data: { agents } });
@@ -365,7 +365,7 @@ export class JobsCommand {
     const parts: string[] = ['📅 *Scheduled Jobs & Reminders*\n'];
     if (active.length > 0) { parts.push(`*Active (${active.length}):*`); parts.push(...active.map(formatJob)); }
     if (inactive.length > 0) { parts.push(`\n*Inactive / Completed (${inactive.length}):*`); parts.push(...inactive.map(formatJob)); }
-    parts.push('\nUse `$jobs cancel <id>` to cancel a job.');
+    parts.push('\nUse `jobs cancel <id>` to cancel a job.');
     return parts.join('\n');
   }
 

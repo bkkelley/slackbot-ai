@@ -23,9 +23,9 @@ export class SkillsCommand {
     const { text, thread_ts, ts, say } = ctx;
     const trimmed = text.trim();
 
-    if (!/^\$skills(\s|$)/i.test(trimmed) && !/^\$skills$/i.test(trimmed)) return false;
+    if (!/^skills(\s|$)/i.test(trimmed)) return false;
 
-    const args = trimmed.slice('$skills'.length).trim();
+    const args = trimmed.slice('skills'.length).trim();
 
     if (!args || /^list$/i.test(args)) {
       const { stdout, code } = await runSkillsCommand(['list']);
@@ -67,7 +67,7 @@ export class SkillsCommand {
     }
 
     await say({
-      text: `*$skills commands:*\n\`$skills list\` — show installed skills\n\`$skills add <package>\` — install a skill (e.g. \`$skills add anthropic/claude-code-skills\`)\n\`$skills remove <name>\` — uninstall a skill`,
+      text: `*skills commands:*\n\`skills list\` — show installed skills\n\`skills add <package>\` — install a skill (e.g. \`skills add anthropic/claude-code-skills\`)\n\`skills remove <name>\` — uninstall a skill`,
       thread_ts: thread_ts || ts,
     });
     return true;
