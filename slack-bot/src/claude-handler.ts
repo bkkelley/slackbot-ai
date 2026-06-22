@@ -29,7 +29,7 @@ const AGENDA_SYSTEM_PROMPT = [
   'When the user asks what is on their plate / their day / agenda / schedule / "what do I have today",',
   'or asks about meetings, calendar, or email, use the `outlook` skill (via the Skill tool) — it reads',
   'their calendar and inbox locally. Do NOT claim you lack calendar or email access before trying it.',
-  'For tasks specifically, a Slack List must be named ($tasks). It reads the owner\'s signed-in Outlook,',
+  'For tasks specifically, a Slack List must be named (tasks). It reads the owner\'s signed-in Outlook,',
   'so it only reflects the owner — note that if someone else is asking.',
 ].join(' ');
 

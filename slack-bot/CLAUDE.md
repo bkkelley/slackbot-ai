@@ -24,7 +24,7 @@ The bot allows users to interact with Claude Code through Slack, providing real-
 ### Key Features
 
 #### 1. Channel → Project Mapping
-- **Explicit mapping**: `$project map <name>` (channel) or the App Home modal maps a channel to a project = a workspace directory. Claude runs there when mentioned, with a context preamble.
+- **Explicit mapping**: `project map <name>` (channel) or the App Home modal maps a channel to a project = a workspace directory. Claude runs there when mentioned, with a context preamble.
 - **Default workspace**: unmapped channels and DMs use `~/claude-workspaces/general/`.
 - **DM scoping**: a leading `project: <name>` line scopes a DM thread.
 - **Storage**: `~/claude-workspaces/channel-projects.json` (see `orchestration/channel-projects.ts`). There is no `cwd` command — this replaced the old working-directory system.
@@ -107,7 +107,7 @@ DEBUG=true
 - `canvases:write` - Create/edit canvases (WriteCanvas tool)
 - `canvases:read` - Read canvases
 - `reminders:write` - Create native Slack reminders (AddReminder tool; degraded API — prefer ScheduleMessage)
-- `lists:write` - Create lists/items ($tasks, CreateTaskList/AddTask tools; **requires a paid Slack plan**)
+- `lists:write` - Create lists/items (tasks, CreateTaskList/AddTask tools; **requires a paid Slack plan**)
 - `lists:read` - Read list items (ListTasks tool)
 - _(scheduled messages use the existing `chat:write` scope — no new scope needed)_
 
@@ -126,7 +126,7 @@ The bot uses Socket Mode for real-time event handling, requiring an app-level to
 ### Channel Setup
 ```
 1. Add bot to channel
-2. (optional) Map it to a project: `$project map acme-api`
+2. (optional) Map it to a project: `project map acme-api`
 3. Mention the bot: `@ClaudeBot help me with authentication`
    → unmapped channels run in the `general` workspace
 ```

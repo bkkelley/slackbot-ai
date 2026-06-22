@@ -61,9 +61,9 @@ async function start() {
         let welcomeMessage = `👋 Hi! I'm Claude Code, your AI coding assistant.\n\n`;
         welcomeMessage += `Mention me here and I'll get to work. By default I operate in the *general* workspace.\n\n`;
         welcomeMessage += `To tie #${channelName} to a specific project, map it:\n`;
-        welcomeMessage += `• \`$project map <name>\` — a folder under \`${config.baseDirectory || '~/claude-workspaces'}\`, or an absolute path\n`;
-        welcomeMessage += `• \`$project\` shows the current mapping · \`$project unmap\` clears it\n\n`;
-        welcomeMessage += `Once mapped, I'll run in that project's directory for everything in this channel. \`$help\` for more.`;
+        welcomeMessage += `• \`project map <name>\` — a folder under \`${config.baseDirectory || '~/claude-workspaces'}\`, or an absolute path\n`;
+        welcomeMessage += `• \`project\` shows the current mapping · \`project unmap\` clears it\n\n`;
+        welcomeMessage += `Once mapped, I'll run in that project's directory for everything in this channel. \`help\` for more.`;
 
         await transport.send(channelId, undefined, welcomeMessage);
         logger.info('Sent welcome message to channel', { channelId, channelName });

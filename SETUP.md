@@ -83,7 +83,7 @@ channels:history         groups:history          im:history   im:read   im:write
 users:read               reactions:write
 canvases:read            canvases:write          # WriteCanvas
 reminders:read           reminders:write         # AddReminder
-lists:read               lists:write             # $tasks / lists (needs a PAID plan)
+lists:read               lists:write             # tasks / lists (needs a PAID plan)
 files:read               files:write             # uploads + canvas/list permalinks
 links:read               pins:read   pins:write
 ```
@@ -300,7 +300,7 @@ curl -s -o /dev/null -w "bot  %{http_code}\n"  http://127.0.0.1:3458/   # 401 = 
 grep "is running" <repo>/.local/logs/com.slackbot.bot.out.log | tail -1   # ⚡️ bot is running
 ```
 - Web dashboard: <http://localhost:3456/agents/>
-- In Slack: DM the bot or `@`-mention it; `$help` lists commands. Open the bot's **Home** tab.
+- In Slack: DM the bot or `@`-mention it; `help` lists commands. Open the bot's **Home** tab.
 
 ---
 

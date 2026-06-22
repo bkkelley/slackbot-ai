@@ -6,7 +6,7 @@ import * as path from 'path';
  * project means the bot runs Claude Code in that directory (and injects a short context preamble)
  * whenever it acts in that channel. Replaces the old per-channel "working directory" system.
  *
- * Mapping is explicit only: set via the `$project map <name>` command or the App Home modal.
+ * Mapping is explicit only: set via the `project map <name>` command or the App Home modal.
  * Unmapped channels and DMs fall back to a single "general" workspace.
  */
 
@@ -204,7 +204,7 @@ export function projectPreamble(project: string | null, dir: string): string {
   return s + '\n';
 }
 
-/** Existing project folders directly under BASE_DIRECTORY (for pickers / `$project list`). */
+/** Existing project folders directly under BASE_DIRECTORY (for pickers / `project list`). */
 export function listProjects(): string[] {
   try {
     return fs

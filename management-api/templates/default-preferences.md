@@ -1,11 +1,11 @@
 # Working preferences
 
 How this organization likes the assistant to work. These are starting defaults —
-edit them during onboarding (or anytime with `$remember <preference>` in Slack) to
+edit them during onboarding (or anytime with `remember that <preference>` in Slack) to
 match how your team actually operates.
 
 ## Task tracking
-- Track shared, actionable work in **Slack Lists** (use `$tasks` / the CreateTaskList
+- Track shared, actionable work in **Slack Lists** (use `tasks` / the CreateTaskList
   + AddTask tools), so the whole channel can see status. Give ownership of any list
   you create to the person who requested it.
 - For code- or project-specific checklists, a markdown file under the project's

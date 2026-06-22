@@ -41,7 +41,7 @@ export async function buildHomeBlocks(): Promise<object[]> {
   // 📁 Channel → project mappings
   blocks.push({ type: 'divider' }, { type: 'header', text: { type: 'plain_text', text: '📁 Channel → project' } });
   if (!mappings.length) {
-    blocks.push(section('_No channels mapped._ Add one below, or run `$project map <name>` from inside a channel.'));
+    blocks.push(section('_No channels mapped._ Add one below, or run `project map <name>` from inside a channel.'));
   } else {
     const MAX = 80;
     for (const [cid, proj] of mappings.slice(0, MAX)) {
@@ -72,7 +72,7 @@ export async function buildHomeBlocks(): Promise<object[]> {
 
   blocks.push(
     { type: 'divider' },
-    { type: 'context', elements: [{ type: 'mrkdwn', text: 'In a channel: `$project map <name>` · `$project unmap`. In a DM: `project: <name>` to scope a thread. `$help` for all commands.' }] }
+    { type: 'context', elements: [{ type: 'mrkdwn', text: 'In a channel: `project map <name>` · `project unmap`. In a DM: `project: <name>` to scope a thread. `help` for all commands.' }] }
   );
 
   return blocks;

@@ -29,7 +29,7 @@ const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:3456';
 
 // The conversational onboarding engine is a project skill of THIS system repo (not a global skill),
 // at <repo>/.claude/skills/onboard/SKILL.md. The bot's session runs in other workspaces, so we don't
-// rely on Skill-tool discovery — we read the skill text and inject it as the prompt for `$onboard`.
+// rely on Skill-tool discovery — we read the skill text and inject it as the prompt for `onboard`.
 let _onboardSkill: string | null = null;
 function onboardPrompt(): string {
   if (_onboardSkill === null) {
@@ -205,8 +205,8 @@ export class MessageProcessor {
     const threadKey = `${channelId}:${effectiveThreadId}`;
     let promptText = text || '';
 
-    // Bare `$onboard` (or a natural-language "help me set up") hands the conversation to the Claude
-    // session, which runs the interactive `onboard` skill. (`$onboard status` is handled earlier by
+    // Bare `onboard` (or a natural-language "help me set up") hands the conversation to the Claude
+    // session, which runs the interactive `onboard` skill. (`onboard status` is handled earlier by
     // OnboardCommand as a quick one-shot dump.)
     const isOnboard =
       /^onboard\s*$/i.test(promptText.trim()) ||

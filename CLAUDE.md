@@ -184,37 +184,37 @@ The `$`-commands below are fast shortcuts, but the whole system is also operable
 ### Slack commands
 
 ```
-$agents list
-$agents create
-$agents delete <name>
-$agents run <name> <action> [--files <path>]
+agents list
+agents create
+agents delete <name>
+agents run <name> <action> [--files <path>]
 
 model sonnet / haiku / opus / reset
 
-$jobs
-$jobs create
-$jobs cancel <id>
-$schedule <plain English>
+jobs
+jobs create
+jobs cancel <id>
+jobs schedule <plain English>
 
-$workflows list
-$workflows run <name> [sync|async]
-$workflows create
-$workflows delete <name>
+workflows list
+workflows run <name> [sync|async]
+workflows create
+workflows delete <name>
 
-$tasks create <name>
-$tasks add <listId> <task>
-$tasks list <listId>
+tasks create <name>
+tasks add <listId> <task>
+tasks list <listId>
 
-$project                 # show this channel's project mapping
-$project map <name>      # map this channel to a project (Claude runs there)
-$project unmap
-$project list
+project                 # show this channel's project mapping
+project map <name>      # map this channel to a project (Claude runs there)
+project unmap
+project list
 
 mcp
 mcp reload
 
-$skills
-$help
+skills
+help
 ```
 
 In a DM, start a message with `project: <name>` to scope that thread to a project.
@@ -231,7 +231,7 @@ In a DM, start a message with `project: <name>` to scope that thread to a projec
 
 There is no `cwd` command. Instead, a channel is **mapped to a project** = a workspace directory. When the bot is mentioned in a mapped channel it runs Claude Code **in that directory** and prepends a short "you're working on project X" context preamble.
 
-- **Map** explicitly: `$project map <name>` in a channel, or the App Home **➕ Add / change a mapping** modal. `<name>` is a folder under `~/claude-workspaces/` (created on demand) or an absolute path.
+- **Map** explicitly: `project map <name>` in a channel, or the App Home **➕ Add / change a mapping** modal. `<name>` is a folder under `~/claude-workspaces/` (created on demand) or an absolute path.
 - **Unmapped channels and DMs** fall back to the **`~/claude-workspaces/general/`** workspace. In a DM, a leading `project: <name>` line scopes that thread.
 - Channel→project mappings live in `~/claude-workspaces/channel-projects.json` (gitignored). Managed by `slack-bot/src/orchestration/channel-projects.ts`. Multiple channels (e.g. a sales + a delivery channel) can map to the same project — both resolve to the same context.
 
@@ -248,9 +248,9 @@ Each project folder can carry a `~/claude-workspaces/<project>/project.json` tha
 }
 ```
 
-- **Salesforce** — `$project sf <org> <AccountId> <Project__cId>` (or the Home modal). Claude queries these via the `sf` skill with `--target-org <org>` automatically — no need to name the org/records. (`Project__c` is the project object; Account is standard.) The salesforce skill is read-only by instruction (never writes CRM data).
-- **Google Drive** — `$project drive <absolute path>`. The folder is a **Google Drive for Desktop** local synced path (`~/Library/CloudStorage/GoogleDrive-<acct>/…`), so Claude reads/writes it with normal file tools; dropping a file there syncs to the cloud. No API/OAuth.
-- `$project` (no args) shows the project + its current bindings. Bindings are set manually (paste the 15/18-char Salesforce IDs); auto-discovery is a future enhancement.
+- **Salesforce** — `project sf <org> <AccountId> <Project__cId>` (or the Home modal). Claude queries these via the `sf` skill with `--target-org <org>` automatically — no need to name the org/records. (`Project__c` is the project object; Account is standard.) The salesforce skill is read-only by instruction (never writes CRM data).
+- **Google Drive** — `project drive <absolute path>`. The folder is a **Google Drive for Desktop** local synced path (`~/Library/CloudStorage/GoogleDrive-<acct>/…`), so Claude reads/writes it with normal file tools; dropping a file there syncs to the cloud. No API/OAuth.
+- `project` (no args) shows the project + its current bindings. Bindings are set manually (paste the 15/18-char Salesforce IDs); auto-discovery is a future enhancement.
 
 ### App Home tab
 
@@ -266,7 +266,7 @@ When a Slack channel is created, the bot automatically creates a matching worksp
 
 ### Editing the bot from Slack
 
-1. Map a channel to the bot's source: `$project map /Users/.../slackbot-ai/slack-bot`
+1. Map a channel to the bot's source: `project map /Users/.../slackbot-ai/slack-bot`
 2. Ask Claude to make the change
 3. `./deploy.sh` — builds first, only restarts on success
 
@@ -514,7 +514,7 @@ Agents come in two scopes: **global** (vault-backed, long-lived) and **project**
 - `claude-workspaces/<name>/CLAUDE.md` — Claude's entry point (one-liner pointer or full inline)
 - `claude-workspaces/<name>/.claude/settings.json` — tool permissions
 
-**Create via:** Slack (`$agents create`), web UI (scope = Global), or `scaffold.createAgent()`.
+**Create via:** Slack (`agents create`), web UI (scope = Global), or `scaffold.createAgent()`.
 
 **What scaffold creates:**
 
