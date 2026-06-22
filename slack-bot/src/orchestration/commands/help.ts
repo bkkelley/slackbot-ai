@@ -8,7 +8,7 @@ Send one of these as a normal bot message in this channel or thread.
 *Setup*
 • *Onboard* — \`onboard\`
    Walk through setup conversationally, one step at a time. (\`onboard status\` for a quick readiness check.)
-• *Remember* — \`remember <preference>\`
+• *Remember* — \`remember that <preference>\`
    Save a working preference to this project's CLAUDE.md.
 
 *Agents*
@@ -18,8 +18,8 @@ Send one of these as a normal bot message in this channel or thread.
 *Jobs*
 • *Jobs* — \`jobs\` · \`jobs create\` · \`jobs cancel <id>\`
    List, create, or cancel scheduled jobs.
-• *Schedule* — \`schedule <plain English>\`
-   Create a recurring job (e.g. \`schedule every day at 9am post the standup\`).
+• *Schedule* — \`jobs schedule <plain English>\`
+   Create a recurring job (e.g. \`jobs schedule every day at 9am post the standup\`).
 
 *Projects*
 • *Project* — \`project\` · \`project map <name>\` · \`project unmap\` · \`project list\`

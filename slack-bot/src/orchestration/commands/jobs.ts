@@ -69,7 +69,9 @@ export class JobsCommand {
       return true;
     }
 
-    const scheduleMatch = text.match(/^schedule\s+(.+)/is);
+    // Nested under `jobs schedule …` so a plain "schedule a meeting" goes to Claude (calendar),
+    // not the job creator.
+    const scheduleMatch = text.match(/^jobs\s+schedule\s+(.+)/is);
     if (scheduleMatch) {
       const scheduleText = scheduleMatch[1].trim();
       const workingDir = resolveProject(channel).dir

@@ -17,11 +17,12 @@ export class OnboardCommand {
     const t = text.trim();
     const reply = (m: string) => say({ text: m, thread_ts: thread_ts || ts });
 
-    // remember <preference>
-    if (/^remember(\s|$)/i.test(t)) {
-      const pref = t.replace(/^remember\s*/i, '').trim();
+    // `remember that <preference>` / `remember: <preference>` — the deliberate form avoids
+    // hijacking natural messages like "remember to call the client".
+    if (/^remember(\s+that\b|\s*:)/i.test(t)) {
+      const pref = t.replace(/^remember(\s+that\b|\s*:)\s*/i, '').trim();
       if (!pref) {
-        await reply('Usage: `remember <preference>` — e.g. `remember track tasks as markdown files in tasks/`. Saved to this channel’s project CLAUDE.md (or global from a DM).');
+        await reply('Usage: `remember that <preference>` — e.g. `remember that I track tasks as markdown files in tasks/`. Saved to this channel’s project CLAUDE.md (or global from a DM).');
         return true;
       }
       const proj = loadChannelProjects()[channel];
@@ -56,7 +57,7 @@ export class OnboardCommand {
         const next = [
           '*Next steps:*',
           '• Map a project here: `project map <name>`, then `project sf <org> <AccountId> <Project__cId>` and `project drive <path>`',
-          '• Capture a working preference: `remember <how you like to work>`',
+          '• Capture a working preference: `remember that <how you like to work>`',
           `• Step-by-step setup for anything not ready: the *Onboarding* tab → ${process.env.PUBLIC_BASE_URL || 'http://localhost:3456'}/agents/#onboarding`,
         ].join('\n');
         await reply(`*Setup status — ${s.ok || 0}/${s.total || 0} ready*\n\n${lines.join('\n')}\n\n${next}`);
