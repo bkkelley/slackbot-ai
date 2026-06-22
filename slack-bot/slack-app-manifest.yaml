@@ -8,6 +8,10 @@ features:
   app_home:
     home_tab_enabled: true
     messages_tab_enabled: false
+  slash_commands:
+    - command: /commands
+      description: Show all available bot commands
+      should_escape: false
 oauth_config:
   scopes:
     bot:

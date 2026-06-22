@@ -14,7 +14,14 @@
     "bot_user": {
       "display_name": "Claude Code",
       "always_online": true
-    }
+    },
+    "slash_commands": [
+      {
+        "command": "/commands",
+        "description": "Show all available bot commands",
+        "should_escape": false
+      }
+    ]
   },
   "oauth_config": {
     "scopes": {

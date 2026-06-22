@@ -14,6 +14,7 @@ import {
   TaskItem,
 } from '../../orchestration/types';
 import { downloadSlackFile } from './file-downloader';
+import { HELP_TEXT } from '../../orchestration/commands/help';
 import { Logger } from '../../logger';
 import { normalizeSlackReactionName } from './reactions';
 import { buildHomeBlocks, privateHomeBlocks, buildMapModal } from './home-view';
@@ -81,6 +82,13 @@ export class SlackTransport implements ChannelTransport {
         this.logger.info('Handling file upload event');
         await this.messageHandler!(this.convertEvent(event as any));
       }
+    });
+
+    // /commands slash command — shows the full command list (ephemeral, just to the invoker).
+    // Delivered over Socket Mode; the command must be registered in the Slack app config (manifest).
+    this.app.command('/commands', async ({ ack, respond }) => {
+      await ack();
+      await respond({ response_type: 'ephemeral', text: HELP_TEXT });
     });
 
     // App Home tab

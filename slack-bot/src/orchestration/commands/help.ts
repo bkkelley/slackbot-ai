@@ -1,6 +1,6 @@
 import { CommandContext } from './types';
 
-const HELP_TEXT = `*Commands*
+export const HELP_TEXT = `*Commands*
 
 *Setup*
 \`$onboard\` — walk through setup conversationally, one step at a time
