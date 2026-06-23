@@ -201,6 +201,12 @@ export class ClaudeHandler {
       '--output-format', 'stream-json',
       '--permission-mode', 'bypassPermissions',
       '--allowed-tools', allowedTools.join(','),
+      // bypassPermissions runs every tool the CLI ships, including its built-in persistent task list
+      // (TaskCreate), which has no surface in Slack — so "add a task" silently went nowhere the user
+      // could see. Block it here so task requests route to the Slack-visible CreateTaskList/AddTask
+      // tools instead. NOTE: TodoWrite is deliberately NOT blocked — the bot's live "📋 Task List"
+      // progress display in Slack is driven by it (see tool-normalizer / message-processor).
+      '--disallowed-tools', 'TaskCreate',
       '--model', model || 'claude-sonnet-4-6',
     ];
 
