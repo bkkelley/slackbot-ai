@@ -137,6 +137,7 @@ function app() {
     copiedKey: '',             // which code block was last copied (for the ✓ flash)
     prefText: '',
     defaultPrefText: '',       // shipped default org preferences (pre-fills the textarea)
+    prefBaseline: '',          // last text saved for the current scope; Save is disabled until prefText differs (the endpoint appends, so re-saving identical text duplicates it)
     prefScope: 'global',
     prefMsg: '',
     prefErr: false,
@@ -1877,9 +1878,18 @@ Evaluator must include PASS. Otherwise the candidate output is fed back to Worke
 
     resetPrefsToDefault() { this.prefText = this.defaultPrefText; this.prefMsg = ''; this.prefErr = false; },
 
+    // True when there's nothing new to save — Save is disabled in this state so re-clicking can't
+    // append a duplicate copy (the endpoint appends rather than replaces).
+    prefUnchanged() { return !this.prefText.trim() || this.prefText === this.prefBaseline; },
+
+    // Switching scope means a different CLAUDE.md, so reset the baseline (its current text isn't known).
+    onPrefScopeChange() { this.prefBaseline = ''; this.prefMsg = ''; this.prefErr = false; },
+
     async savePreference() {
       this.prefMsg = ''; this.prefErr = false;
       if (!this.prefText.trim()) { this.prefErr = true; this.prefMsg = 'Enter a preference first.'; return; }
+      // Guard the race where a double-click fires before the button disables.
+      if (this.prefText === this.prefBaseline) { this.prefMsg = 'No changes to save.'; return; }
       try {
         const r = await fetch('api/onboarding/preferences', {
           method: 'POST',
@@ -1889,7 +1899,7 @@ Evaluator must include PASS. Otherwise the candidate output is fed back to Worke
         const data = await r.json();
         if (!r.ok) { this.prefErr = true; this.prefMsg = data.error || 'Save failed'; return; }
         this.prefMsg = 'Saved → ' + data.file;
-        this.prefText = '';
+        this.prefBaseline = this.prefText; // keep the saved text shown; Save stays disabled until edited again
         this.notify('Preference saved to CLAUDE.md');
         setTimeout(() => { this.prefMsg = ''; }, 6000);
       } catch (err) { this.prefErr = true; this.prefMsg = err.message; }
