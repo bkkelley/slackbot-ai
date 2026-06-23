@@ -458,12 +458,13 @@ export class SlackTransport implements ChannelTransport {
   // `time` is a Unix timestamp (seconds), a number of seconds from now, or natural language
   // ("in 30 minutes", "tomorrow at 9am"). With a bot token, `user` targets another user.
   // Requires reminders:write. NOTE: the reminders API is degraded/on a retirement path — prefer
-  // scheduleMessage for durable time-based delivery.
-  async addReminder(userId: string, text: string, time: string | number): Promise<CreatedReminder> {
-    const result: any = await this.app.client.reminders.add({
+  // scheduleMessage for durable time-based delivery. reminders.add only accepts a USER token
+  // (a bot token returns not_allowed_token_type), so this goes through the xoxp user client and
+  // creates the reminder as the owner; it throws a clear error if no user token is configured.
+  async addReminder(_userId: string, text: string, time: string | number): Promise<CreatedReminder> {
+    const result: any = await this.requireUserClient().reminders.add({
       text,
       time,
-      user: userId,
     } as any);
     return { reminderId: (result.reminder?.id ?? '') as string };
   }
