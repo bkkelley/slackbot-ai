@@ -33,6 +33,21 @@ const AGENDA_SYSTEM_PROMPT = [
   'so it only reflects the owner — note that if someone else is asking.',
 ].join(' ');
 
+// Make task/reminder routing deterministic. Without this the model treats "add a task to call X later
+// today" as time-based and reaches for a reminder; and it must never use the CLI's invisible built-in
+// task tools. Tasks → Slack List (visible, shareable). Reminders → scheduled message (the native
+// reminders API is retired and silently no-ops).
+const TASKS_SYSTEM_PROMPT = [
+  'Task & reminder routing (do this exactly):',
+  '- When the user says "add a task", "track this", "to-do", or otherwise asks to capture work —',
+  'including a personal one-off — create or append to a Slack List with CreateTaskList / AddTask and',
+  'share the list permalink. Never use any built-in/session task or to-do tool for this; those are',
+  'invisible to the user in Slack.',
+  '- When the user explicitly asks to be reminded/nudged at or in some time ("remind me…", "ping me in…"),',
+  'use ScheduleMessage (it posts at that time). Do NOT use a native Slack reminder — that API is retired',
+  'and silently does nothing.',
+].join(' ');
+
 // Local types matching `claude --output-format stream-json` NDJSON output.
 export type SDKMessage =
   | { type: 'system'; subtype: 'init'; session_id: string; [key: string]: unknown }
@@ -213,7 +228,7 @@ export class ClaudeHandler {
     // Only the interactive Slack session has the system-control MCP (ListProjects). Teach it that
     // "my projects" = the system registry, so it doesn't fall back to sweeping GitHub/the filesystem.
     if (slackContext) {
-      baseArgs.push('--append-system-prompt', `${PROJECTS_SYSTEM_PROMPT}\n\n${AGENDA_SYSTEM_PROMPT}`);
+      baseArgs.push('--append-system-prompt', `${PROJECTS_SYSTEM_PROMPT}\n\n${AGENDA_SYSTEM_PROMPT}\n\n${TASKS_SYSTEM_PROMPT}`);
     }
 
     if (Object.keys(mcpServers).length > 0) {

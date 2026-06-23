@@ -39,10 +39,6 @@ export interface ScheduledMessageSummary {
   text?: string;
 }
 
-export interface CreatedReminder {
-  reminderId: string;
-}
-
 export interface CreatedTaskList {
   listId: string;
   primaryColumnId?: string;
@@ -95,9 +91,6 @@ export interface ChannelTransport {
   scheduleMessage?(channelId: string, threadId: string | undefined, text: string, postAt: number): Promise<ScheduledMessage>;
   listScheduledMessages?(channelId?: string): Promise<ScheduledMessageSummary[]>;
   cancelScheduledMessage?(channelId: string, scheduledMessageId: string): Promise<void>;
-
-  // Native reminders (Slack-only; optional per transport)
-  addReminder?(userId: string, text: string, time: string | number): Promise<CreatedReminder>;
 
   // Lists / tasks (Slack-only; optional per transport; requires a paid plan)
   createTaskList?(name: string, grantUserId?: string): Promise<CreatedTaskList>;

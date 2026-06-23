@@ -242,24 +242,6 @@ export class RuntimeApiServer {
       return;
     }
 
-    if (url === '/api/transport-proxy/reminder') {
-      if (!transport.addReminder) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: false, error: 'reminders unsupported for this transport' }));
-        return;
-      }
-      try {
-        const { userId, text, time } = body as { userId: string; text: string; time: string | number };
-        const result = await transport.addReminder(userId, text, time);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, reminderId: result.reminderId }));
-      } catch (err: any) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: false, error: err?.message ?? String(err) }));
-      }
-      return;
-    }
-
     if (url === '/api/transport-proxy/task') {
       if (!transport.createTaskList || !transport.addTask || !transport.listTasks) {
         res.writeHead(200, { 'Content-Type': 'application/json' });

@@ -69,7 +69,7 @@ const TOOLS = [
   },
   {
     name: 'ScheduleMessage',
-    description: 'Schedule a message to post later in the current channel/thread. `at` accepts a unix timestamp or an ISO date.',
+    description: 'Schedule a message to post later in the current channel/thread. `at` accepts a unix timestamp or an ISO date. This is also how to set a reminder/nudge ("remind me to… at/in…"): in a DM it posts to the user as a reminder at that time. (Slack\'s native reminders API is retired and silently no-ops, so use this instead.)',
     inputSchema: {
       type: 'object',
       properties: {
@@ -91,18 +91,6 @@ const TOOLS = [
       type: 'object',
       properties: { scheduledMessageId: { type: 'string' } },
       required: ['scheduledMessageId'],
-    },
-  },
-  {
-    name: 'AddReminder',
-    description: 'Add a native Slack reminder for the current user. `time` accepts a unix timestamp or natural language Slack understands (e.g. "in 2 hours").',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        text: { type: 'string' },
-        time: { type: ['string', 'number'] },
-      },
-      required: ['text', 'time'],
     },
   },
   {
@@ -198,10 +186,6 @@ class SlackToolsServer {
           case 'CancelScheduledMessage': {
             await proxy('cancel-scheduled', { channelId: CTX.channel, scheduledMessageId: a.scheduledMessageId });
             return ok({ cancelled: true });
-          }
-          case 'AddReminder': {
-            const r = await proxy('reminder', { userId: CTX.user, text: a.text, time: a.time });
-            return ok({ reminderId: r.reminderId });
           }
           case 'CreateTaskList': {
             const r = await proxy('task', { op: 'create-list', name: a.name, grantUserId: CTX.user });

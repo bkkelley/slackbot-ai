@@ -5,9 +5,11 @@ edit them during onboarding (or anytime with `remember that <preference>` in Sla
 match how your team actually operates.
 
 ## Task tracking
-- Track shared, actionable work in **Slack Lists** (use `tasks` / the CreateTaskList
-  + AddTask tools), so the whole channel can see status. Give ownership of any list
-  you create to the person who requested it.
+- When asked to "add a task" or capture actionable work — **including a personal one-off** — put it
+  in a **Slack List** (CreateTaskList + AddTask) and share the list's permalink, giving ownership to
+  the person who requested it. Never use a built-in/session task tool; those are invisible in Slack.
+- For a time-based nudge ("remind me to… / ping me in…"), schedule a message (ScheduleMessage) at
+  that time. Slack's native reminders are retired and silently do nothing — don't use them.
 - For code- or project-specific checklists, a markdown file under the project's
   `tasks/` folder is fine instead — prefer whichever the requester asks for.
 
