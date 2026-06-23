@@ -27,7 +27,7 @@ cat slack-bot/slack-app-manifest.yaml | pbcopy
 ```
 
 Then open the dashboard → **Onboarding** tab: <http://localhost:3456/agents/#onboarding>. It live-checks
-each integration and has the same copy-paste steps, plus optional add-ons (Slack-read MCP, Salesforce,
+each integration and has the same copy-paste steps, plus optional add-ons (Slack read-as-you, Salesforce,
 Drive, Outlook). The rest of this doc is the manual reference behind those scripts.
 
 > Notation: `<repo>` = wherever you put this checkout (the documented location is `~/claude-workspaces/system`).
@@ -233,20 +233,21 @@ The Home tab shows your last 10 Outlook emails and upcoming events via the `outl
 
 Without this, the Home tab still renders — it just shows a "not reachable" note instead of mail/events.
 
-### 6b. Read your Slack messages "as you" [manual]
-For features like "find my commitments from the last hour," the bot uses the **hosted Slack MCP**
-(`https://mcp.slack.com/mcp`), which acts as the authenticated user. The bot session already requests
-it (`SLACK_MCP_ENABLED` defaults on); you just authenticate once:
+### 6b. Read your Slack messages "as you" — user token [manual]
+For features like "find my commitments from the last hour" or reading a channel the bot isn't in,
+the bot reads as you via a **user token** (`xoxp-`) — powering the `SearchMessages` /
+`ReadChannelMessages` tools. Read-only; it never posts as you. Works headlessly (unlike the
+OAuth-based hosted Slack MCP, which is off by default — set `SLACK_MCP_ENABLED=true` to opt back in).
 
 ```bash
-claude mcp add --transport http --scope user slack https://mcp.slack.com/mcp
-claude                       # interactive
-#   then:  /mcp  →  slack  →  Authenticate   (browser sign-in as yourself)
-claude mcp list              # expect:  slack ... ✔ Connected
+# In api.slack.com/apps → your app → OAuth & Permissions → User Token Scopes, add:
+#   search:read channels:history channels:read groups:history groups:read im:history mpim:history users:read
+# Reinstall to Workspace, copy the User OAuth Token (xoxp-…), then:
+./scripts/set-slack-creds.sh xoxb-YOUR-BOT-TOKEN xapp-YOUR-APP-TOKEN U-YOUR-MEMBER-ID xoxp-YOUR-USER-TOKEN
 ```
 
-The OAuth token lands in the login Keychain; the bot's headless `claude --print` sessions (same macOS
-user) reuse it automatically. Reads are scoped to what *your* account can see.
+The token is written to `.env` (gitignored) and the bot uses it on restart. Reads are scoped to what
+*your* account can see.
 
 ### 6c. Salesforce orgs via the `sf` CLI [manual]
 Lets the bot query/describe/inspect Salesforce orgs ("query my acme-sandbox org for…", "describe the
@@ -315,7 +316,7 @@ grep "is running" <repo>/.local/logs/com.slackbot.bot.out.log | tail -1   # ⚡�
 | 4. workspace/vault dirs | **auto** | |
 | 5. LaunchAgents | **auto** | generate plists, bootstrap |
 | 6a. Outlook | manual | Legacy mode + Automation grant |
-| 6b. Slack MCP OAuth | manual | `claude /mcp → Authenticate` browser sign-in |
+| 6b. Slack user token | manual | add user scopes + reinstall → `set-slack-creds.sh … <xoxp>` |
 | 7. Verify | **auto** | health checks |
 
 ## Helper scripts (the copy-paste path)

@@ -72,16 +72,6 @@ async function checkSlackScopes() {
   } catch (e) { return item('slack_app', 'Slack app + scopes', 'error', String(e.message)); }
 }
 
-async function checkSlackMcp() {
-  const r = await sh(CLAUDE, ['mcp', 'list'], 15000);
-  const line = r.stdout.split('\n').find((l) => /slack[:\s].*mcp\.slack\.com/i.test(l)) || '';
-  if (/✔|connected/i.test(line)) return item('slack_mcp', 'Slack MCP (read messages as you)', 'ok', 'connected');
-  if (line) return item('slack_mcp', 'Slack MCP (read messages as you)', 'warn', 'registered but not authenticated',
-    'In a terminal: claude → /mcp → slack → Authenticate (browser sign-in)');
-  return item('slack_mcp', 'Slack MCP (read messages as you)', 'missing', 'not registered',
-    'Run: claude mcp add --transport http --scope user slack https://mcp.slack.com/mcp  — then claude → /mcp → slack → Authenticate');
-}
-
 // Optional user token (xoxp) — powers SearchMessages / ReadChannelMessages (read as the owner).
 async function checkSlackUserToken() {
   const L = 'Slack user token (read as you)';
@@ -153,7 +143,7 @@ async function checkMemory() {
 // ─────────────────────────────────────────────────────────────────────────
 // Guided setup wizard content.
 // Each guide's `id` aligns with a /status item id where a live check exists
-// (services, slack_app, slack_mcp, salesforce, drive, outlook, memory); the `prereqs`
+// (services, slack_app, slack_user_token, salesforce, drive, outlook, memory); the `prereqs`
 // guide is `manual: true` (no auto-check). Each step aims to be a single copy-paste
 // command (often a scripts/*.sh) rather than instructions to interpret; `code` blocks
 // get a copy button in the dashboard.
@@ -185,16 +175,8 @@ const GUIDE = [
     ],
   },
   {
-    id: 'slack_mcp', label: 'Read your Slack messages', check: 'slack_mcp',
-    why: 'Lets the bot read/search your Slack as you (e.g. "what did I commit to in the last hour"). Authenticate once; the token lands in your login Keychain and headless sessions reuse it.',
-    steps: [
-      { title: 'Register the hosted Slack MCP', code: 'claude mcp add --transport http --scope user slack https://mcp.slack.com/mcp' },
-      { title: 'Authenticate as yourself (browser)', body: 'Open Claude, then: /mcp → slack → Authenticate.', code: 'claude' },
-    ],
-  },
-  {
     id: 'slack_user_token', label: 'Read your Slack as you (user token)', check: 'slack_user_token', optional: true,
-    why: 'Lets the bot search/read your Slack across every channel you\'re in — including ones the bot isn\'t a member of — via the SearchMessages / ReadChannelMessages tools. Read-only; it never posts as you. Works headlessly (unlike the OAuth-based Slack MCP above).',
+    why: 'Lets the bot search/read your Slack across every channel you\'re in — including ones the bot isn\'t a member of — via the SearchMessages / ReadChannelMessages tools. Read-only; it never posts as you.',
     steps: [
       { title: 'Add User Token Scopes', body: 'api.slack.com/apps → your app → OAuth & Permissions → User Token Scopes: add search:read, channels:history, channels:read, groups:history, groups:read, im:history, mpim:history, users:read.' },
       { title: 'Reinstall + copy the User OAuth Token', body: 'Reinstall to Workspace, then copy the token starting with xoxp-.' },
@@ -253,7 +235,7 @@ router.get('/status', async (req, res) => {
   try {
     if (_cache.data && Date.now() - _cache.at < 20000 && !req.query.fresh) return res.json(_cache.data);
     const items = await Promise.all([
-      checkServices(), checkSlackScopes(), checkSlackMcp(), checkSlackUserToken(), checkSalesforce(), Promise.resolve(checkDrive()), checkOutlook(), checkMemory(),
+      checkServices(), checkSlackScopes(), checkSlackUserToken(), checkSalesforce(), Promise.resolve(checkDrive()), checkOutlook(), checkMemory(),
     ]);
     const summary = { ok: items.filter((c) => c.status === 'ok').length, warn: items.filter((c) => c.status === 'warn').length, missing: items.filter((c) => c.status === 'missing' || c.status === 'error').length, total: items.length };
     _cache = { at: Date.now(), data: { items, summary } };
@@ -263,7 +245,7 @@ router.get('/status', async (req, res) => {
 
 // GET /status/:id — re-run a single integration check (used by the wizard's "Verify now")
 const CHECKS = {
-  services: checkServices, slack_app: checkSlackScopes, slack_mcp: checkSlackMcp,
+  services: checkServices, slack_app: checkSlackScopes,
   slack_user_token: checkSlackUserToken,
   salesforce: checkSalesforce, drive: () => Promise.resolve(checkDrive()), outlook: checkOutlook,
   memory: checkMemory,

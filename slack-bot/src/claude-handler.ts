@@ -159,11 +159,11 @@ export class ClaudeHandler {
         },
       };
 
-      // Hosted Slack MCP (acts as the authenticated user via OAuth): search/read/post the user's
-      // own Slack messages — e.g. "what did I commit to in the last hour". Reuses the keychain
-      // token from a one-time `claude → /mcp → slack → Authenticate`. Set SLACK_MCP_ENABLED=false
-      // to disable. Tools appear only once authenticated, so it degrades gracefully if not.
-      if (process.env.SLACK_MCP_ENABLED !== 'false') {
+      // Hosted Slack MCP (acts as the authenticated user via OAuth) — OFF by default. Superseded by
+      // the user-token read path (SearchMessages / ReadChannelMessages via SLACK_USER_TOKEN), which
+      // works headlessly; the hosted MCP needs interactive browser OAuth that headless sessions can't
+      // do. Opt back in with SLACK_MCP_ENABLED=true if you specifically want it.
+      if (process.env.SLACK_MCP_ENABLED === 'true') {
         mcpServers['slack'] = { type: 'http', url: process.env.SLACK_MCP_URL || 'https://mcp.slack.com/mcp' };
       }
 
