@@ -112,15 +112,18 @@ router.get('/', (req, res) => {
   }
 });
 
-// GET /channel-directory — channels the BOT is a member of, for the picker. Cached 5 min.
-// We use users.conversations (the bot's own memberships), NOT conversations.list (every public
-// channel), because mapping only does anything in channels the bot has been added to — it only
-// acts on @mention. This also surfaces private channels the bot was invited to. Degrades
-// gracefully: returns { ok:false, error } (e.g. missing_scope) so the UI falls back to paste-ID.
+// GET /channel-directory — channels for the picker, via users.conversations. Cached 5 min.
+// Preferred token is the user token (xoxp): it returns every channel the OWNER is in, including
+// ones the bot hasn't been invited to. We separately pull the bot's own memberships (xoxb) and
+// flag each channel with is_bot_member, so the UI can mark where the bot will actually respond
+// (it only acts on @mention in channels it's a member of) vs. read-only-via-user-token channels.
+// Falls back to bot-only if no user token. Degrades gracefully: returns { ok:false, error } (e.g.
+// missing_scope) so the UI falls back to paste-ID.
 let _chanCache = { at: 0, data: null };
-async function listSlackChannels() {
-  const token = process.env.SLACK_BOT_TOKEN;
-  if (!token) return { ok: false, error: 'no_bot_token' };
+
+// Returns { ok, channels:[{id,name,is_private}], error } for one token's users.conversations.
+async function fetchConversations(token) {
+  if (!token) return { ok: false, error: 'no_token' };
   const channels = [];
   let cursor = '';
   for (let i = 0; i < 25; i++) {
@@ -136,8 +139,32 @@ async function listSlackChannels() {
     cursor = (j.response_metadata && j.response_metadata.next_cursor) || '';
     if (!cursor) break;
   }
-  channels.sort((a, b) => a.name.localeCompare(b.name));
   return { ok: true, channels };
+}
+
+async function listSlackChannels() {
+  const userToken = process.env.SLACK_USER_TOKEN;
+  const botToken = process.env.SLACK_BOT_TOKEN;
+  if (!userToken && !botToken) return { ok: false, error: 'no_token' };
+
+  // Bot's own memberships → the set of channels where the bot will actually respond.
+  const botResult = botToken ? await fetchConversations(botToken) : { ok: false, channels: [] };
+  const botIds = new Set((botResult.channels || []).map((c) => c.id));
+
+  // Prefer the user token for the full list (every channel the owner is in). Fall back to bot-only.
+  let base = userToken ? await fetchConversations(userToken) : botResult;
+  let source = userToken ? 'user' : 'bot';
+  if (userToken && !base.ok) {
+    // User token failed (e.g. missing scope) — degrade to bot-only rather than erroring out.
+    base = botResult;
+    source = 'bot';
+  }
+  if (!base.ok) return { ok: false, error: base.error };
+
+  const channels = base.channels
+    .map((c) => ({ ...c, is_bot_member: botIds.has(c.id) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return { ok: true, source, channels };
 }
 
 router.get('/channel-directory', async (req, res) => {

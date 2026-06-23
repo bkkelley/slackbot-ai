@@ -1866,15 +1866,17 @@
                 </template>
                 <span x-show="!(project.channels && project.channels.length)" class="text-xs text-gray-600 italic">no channels mapped</span>
               </div>
-              <!-- The list shows only channels the BOT is a member of (it only acts where it's mentioned).
-                   You can always paste an ID for a channel the bot isn't in yet. -->
+              <!-- The list shows every channel you're in (via the user token). Channels the bot is
+                   also in are marked "✓ bot" — it only responds to @mention there. Channels without
+                   the badge map fine but are read-only (context via the user token) until the bot is
+                   invited. You can always paste an ID for a channel not listed. -->
               <div class="space-y-1">
                 <template x-if="channelDir && channelDir.length">
                   <select @change="if ($event.target.value) { addProjectChannelById(project, $event.target.value); $event.target.value=''; }"
                     class="w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-indigo-500">
-                    <option value="">+ Add a channel the bot is in…</option>
+                    <option value="">+ Add a channel you're in…</option>
                     <template x-for="c in channelDir.filter(c => !(project.channels || []).includes(c.id))" :key="c.id">
-                      <option :value="c.id" x-text="(c.is_private ? '🔒 ' : '# ') + c.name"></option>
+                      <option :value="c.id" x-text="(c.is_private ? '🔒 ' : '# ') + c.name + (c.is_bot_member ? '  ✓ bot' : '  (read-only)')"></option>
                     </template>
                   </select>
                 </template>
@@ -1882,8 +1884,8 @@
                   <input x-model="project._newChannel" placeholder="…or paste a channel ID (e.g. C0AB12CDE)" @keydown.enter="addProjectChannel(project)" class="flex-1 bg-gray-900 border border-gray-800 rounded px-2 py-1 text-xs text-gray-300 font-mono focus:outline-none focus:border-indigo-500" />
                   <button @click="addProjectChannel(project)" class="px-2 py-1 border border-gray-800 text-gray-300 hover:text-white hover:border-gray-700 text-xs rounded transition flex-shrink-0">Add</button>
                 </div>
-                <span class="text-[10px] text-gray-600">Only channels the bot has been added to appear in the list — invite it to a channel and it shows up here. To map one it isn't in yet, paste the channel ID.</span>
-                <span x-show="channelDirError" class="text-[10px] text-gray-600 block">Add <span class="font-mono">channels:read</span> + <span class="font-mono">groups:read</span> to the Slack app + reinstall to list channels by name.</span>
+                <span class="text-[10px] text-gray-600">Lists every channel you're in. <span class="font-mono">✓ bot</span> = the bot is a member and will respond to @mention; others map as read-only (context only) until you invite the bot.</span>
+                <span x-show="channelDirError" class="text-[10px] text-gray-600 block">Add <span class="font-mono">channels:read</span> + <span class="font-mono">groups:read</span> to the Slack app (user-token scopes) + reinstall to list channels by name.</span>
               </div>
               <span x-show="project._chanMsg" class="text-xs" :class="project._chanErr ? 'text-red-400' : 'text-green-400'" x-text="project._chanMsg"></span>
             </div>
