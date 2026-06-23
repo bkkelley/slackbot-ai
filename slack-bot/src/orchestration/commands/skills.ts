@@ -3,6 +3,14 @@ import { CommandContext } from './types';
 
 const NPX = '/opt/homebrew/bin/npx';
 
+// The `skills` CLI colorizes output even when piped, so strip ANSI escapes before posting to Slack
+// (Slack renders them as literal `[38;5;102m…` garbage otherwise).
+// eslint-disable-next-line no-control-regex
+const ANSI_RE = new RegExp('\\x1b\\[[0-9;]*m', 'g');
+function stripAnsi(s: string): string {
+  return s.replace(ANSI_RE, '');
+}
+
 function runSkillsCommand(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
   return new Promise((resolve) => {
     const child = spawn(NPX, ['--yes', 'skills', ...args], {
@@ -12,10 +20,25 @@ function runSkillsCommand(args: string[]): Promise<{ stdout: string; stderr: str
     let stderr = '';
     child.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
     child.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
-    child.on('close', (code) => resolve({ stdout, stderr, code: code ?? 1 }));
+    child.on('close', (code) => resolve({ stdout: stripAnsi(stdout), stderr: stripAnsi(stderr), code: code ?? 1 }));
     child.on('error', (err) => resolve({ stdout: '', stderr: err.message, code: 1 }));
-    setTimeout(() => { child.kill(); resolve({ stdout, stderr: 'timed out', code: 1 }); }, 60_000);
+    setTimeout(() => { child.kill(); resolve({ stdout: stripAnsi(stdout), stderr: 'timed out', code: 1 }); }, 60_000);
   });
+}
+
+// Parse `skills list -g` output into clean skill names. Lines look like (after ANSI strip):
+//   "Global Skills"                                   ← header
+//   ""                                                ← blank
+//   "agent-skill-creator   ~/.agents/skills/...   Agents: Claude Code, …"
+// Columns are padded with runs of spaces, so the name is the first run-delimited cell.
+function parseSkillNames(stdout: string): string[] {
+  return stdout
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .filter((l) => !/^global skills$/i.test(l) && !/^project skills$/i.test(l))
+    .map((l) => l.split(/\s{2,}/)[0].trim())
+    .filter(Boolean);
 }
 
 export class SkillsCommand {
@@ -28,14 +51,16 @@ export class SkillsCommand {
     const args = trimmed.slice('skills'.length).trim();
 
     if (!args || /^list$/i.test(args)) {
-      const { stdout, code } = await runSkillsCommand(['list']);
-      if (code !== 0 || !stdout.trim()) {
+      // List global skills — that's where installed skills live (project scope is usually empty and
+      // the CLI just prints a "no project skills" hint, which is what was leaking into Slack before).
+      const { stdout, code } = await runSkillsCommand(['list', '-g']);
+      const names = parseSkillNames(stdout);
+      if (code !== 0 || names.length === 0) {
         await say({ text: '📭 No skills installed.', thread_ts: thread_ts || ts });
         return true;
       }
-      const lines = stdout.trim().split('\n').filter(Boolean);
-      const formatted = lines.map(l => `• \`${l.trim()}\``).join('\n');
-      await say({ text: `*Installed skills:*\n${formatted}`, thread_ts: thread_ts || ts });
+      const formatted = names.map((n) => `• \`${n}\``).join('\n');
+      await say({ text: `*Installed skills (${names.length}):*\n${formatted}`, thread_ts: thread_ts || ts });
       return true;
     }
 
