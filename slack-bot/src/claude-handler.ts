@@ -33,16 +33,17 @@ const AGENDA_SYSTEM_PROMPT = [
   'so it only reflects the owner — note that if someone else is asking.',
 ].join(' ');
 
-// Make task/reminder routing deterministic. Without this the model treats "add a task to call X later
-// today" as time-based and reaches for a reminder; and it must never use the CLI's invisible built-in
-// task tools. Tasks → Slack List (visible, shareable). Reminders → scheduled message (the native
-// reminders API is retired and silently no-ops).
+// Task/reminder routing. This enforces only the hard constraints; WHERE a task goes is the org's
+// choice, set in the CLAUDE.md task-tracking preference (Slack List, markdown file, etc.) and deferred
+// to here. The constraints: never use the CLI's invisible built-in/session task tool (the user can't
+// see it in Slack), and never use the native Slack reminders API (retired — it silently no-ops).
 const TASKS_SYSTEM_PROMPT = [
-  'Task & reminder routing (do this exactly):',
-  '- When the user says "add a task", "track this", "to-do", or otherwise asks to capture work —',
-  'including a personal one-off — create or append to a Slack List with CreateTaskList / AddTask and',
-  'share the list permalink. Never use any built-in/session task or to-do tool for this; those are',
-  'invisible to the user in Slack.',
+  'Task & reminder routing:',
+  '- When the user asks to capture a task / to-do ("add a task", "track this"), including a personal',
+  'one-off: follow the organization\'s task-tracking preference (from CLAUDE.md) for WHERE it goes —',
+  'e.g. a Slack List (CreateTaskList / AddTask, then share the permalink) or a markdown file. If no',
+  'preference specifies, default to a Slack List. Never use a built-in/session task or to-do tool —',
+  'those are invisible to the user in Slack.',
   '- When the user explicitly asks to be reminded/nudged at or in some time ("remind me…", "ping me in…"),',
   'use ScheduleMessage (it posts at that time). Do NOT use a native Slack reminder — that API is retired',
   'and silently does nothing.',
