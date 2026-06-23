@@ -266,6 +266,7 @@ export class MessageProcessor {
     let statusMessageTs: string | undefined;
     let statusLines: string[] = [];
     let claudeSucceeded = false;
+    let claudeErrored = false;
 
     try {
       const basePrompt = processedFiles.length > 0
@@ -363,12 +364,23 @@ export class MessageProcessor {
             }
           } else if (message.subtype === 'success') {
             claudeSucceeded = true;
+          } else {
+            // Any non-success terminal result (error_during_execution, error_max_turns, …). Clear the
+            // lingering "🤔 Thinking…/⚙️ Working…" placeholder so the thread never looks stuck.
+            claudeErrored = true;
+            this.logger.warn('Claude ended with a non-success result', { subtype: message.subtype });
+            const errText = "❌ *Couldn't complete that* — please try again.";
+            if (statusMessageTs) {
+              await this.transport.update(channelId, statusMessageTs, errText);
+            } else {
+              await this.transport.send(channelId, effectiveThreadId, errText);
+            }
           }
         }
       }
 
       if (claudeSucceeded) await this.transport.send(channelId, effectiveThreadId, '✅ *Task completed*');
-      await this.updateMessageReaction(sessionKey, '✅');
+      await this.updateMessageReaction(sessionKey, claudeErrored ? '❌' : '✅');
 
       this.logger.info('Completed processing message', { sessionKey, messageCount: currentMessages.size });
     } catch (error: any) {

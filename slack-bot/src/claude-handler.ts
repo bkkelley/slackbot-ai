@@ -195,7 +195,7 @@ export class ClaudeHandler {
     if (slackContext && process.env.MEMORY_ENABLED === 'true') mcpToolPrefixes.push('mcp__mempalace');
     allowedTools.push(...mcpToolPrefixes);
 
-    const args: string[] = [
+    const baseArgs: string[] = [
       '--print',
       '--verbose',
       '--output-format', 'stream-json',
@@ -207,105 +207,147 @@ export class ClaudeHandler {
     // Only the interactive Slack session has the system-control MCP (ListProjects). Teach it that
     // "my projects" = the system registry, so it doesn't fall back to sweeping GitHub/the filesystem.
     if (slackContext) {
-      args.push('--append-system-prompt', `${PROJECTS_SYSTEM_PROMPT}\n\n${AGENDA_SYSTEM_PROMPT}`);
+      baseArgs.push('--append-system-prompt', `${PROJECTS_SYSTEM_PROMPT}\n\n${AGENDA_SYSTEM_PROMPT}`);
     }
 
     if (Object.keys(mcpServers).length > 0) {
-      args.push('--mcp-config', JSON.stringify({ mcpServers }));
+      baseArgs.push('--mcp-config', JSON.stringify({ mcpServers }));
       this.logger.debug('Added MCP config', {
         serverCount: Object.keys(mcpServers).length,
         servers: Object.keys(mcpServers),
       });
     }
 
-    if (session?.sessionId) {
-      args.push('--resume', session.sessionId);
-      this.logger.debug('Resuming session', { sessionId: session.sessionId });
-    } else {
-      this.logger.debug('Starting new Claude conversation');
-    }
+    // One spawn-and-stream attempt. Factored out so a failed `--resume` (the saved session no longer
+    // exists on disk — e.g. the conversation was remapped to a different project working dir) can be
+    // retried transparently with a fresh session instead of dead-ending on error_during_execution.
+    // A failed resume emits no init and no assistant content, so suppressing its error result and
+    // retrying is safe and invisible to the user.
+    const self = this;
+    const usedResume = !!session?.sessionId;
+    let resumeFailed = false;
 
-    // Prompt is written to stdin to avoid variadic --allowed-tools consuming it.
-    this.logger.debug('Spawning claude', { claudePath, toolCount: allowedTools.length });
-
-    const child = spawn(claudePath, args, {
-      cwd: workingDirectory,
-      env: { ...process.env },
-    });
-
-    child.stdin.write(prompt);
-    child.stdin.end();
-
-    // --- Async message queue ---
-    const queue: SDKMessage[] = [];
-    let wakeup: (() => void) | null = null;
-    let processExited = false;
-
-    const rl = createInterface({ input: child.stdout, crlfDelay: Infinity });
-
-    rl.on('line', (line) => {
-      const trimmed = line.trim();
-      if (!trimmed) return;
-      try {
-        queue.push(JSON.parse(trimmed) as SDKMessage);
-        wakeup?.();
-        wakeup = null;
-      } catch {
-        this.logger.debug('Unparseable stream-json line', { line: trimmed });
+    const attempt = async function* (useResume: boolean): AsyncGenerator<SDKMessage, void, unknown> {
+      const args = [...baseArgs];
+      if (useResume && session?.sessionId) {
+        args.push('--resume', session.sessionId);
+        self.logger.debug('Resuming session', { sessionId: session.sessionId });
+      } else {
+        self.logger.debug('Starting new Claude conversation');
       }
-    });
 
-    const exitPromise = new Promise<void>((resolve) => {
-      child.on('close', (code) => {
-        this.logger.debug('Claude process exited', { code });
-        processExited = true;
-        wakeup?.();
-        wakeup = null;
-        resolve();
+      // Prompt is written to stdin to avoid variadic --allowed-tools consuming it.
+      self.logger.debug('Spawning claude', { claudePath, toolCount: allowedTools.length });
+
+      const child = spawn(claudePath, args, {
+        cwd: workingDirectory,
+        env: { ...process.env },
       });
-    });
 
-    child.stderr.on('data', (d: Buffer) => {
-      const text = d.toString().trim();
-      if (text) this.logger.debug('claude stderr', { text });
-    });
+      child.stdin.write(prompt);
+      child.stdin.end();
 
-    const timeoutId = setTimeout(() => {
-      this.logger.warn('Query timed out', { timeoutMs: QUERY_TIMEOUT_MS });
-      effectiveController.abort();
-    }, QUERY_TIMEOUT_MS);
+      // --- Async message queue ---
+      const queue: SDKMessage[] = [];
+      let wakeup: (() => void) | null = null;
+      let processExited = false;
+      let sawInit = false;
+      let stderrText = '';
 
-    effectiveController.signal.addEventListener('abort', () => {
-      child.kill();
-    }, { once: true });
+      const rl = createInterface({ input: child.stdout, crlfDelay: Infinity });
 
-    // Returns the next parsed message, or null when the process has exited and
-    // the queue is empty. Suspends when neither condition is true yet.
-    const nextMsg = (): Promise<SDKMessage | null> => {
-      if (queue.length > 0) return Promise.resolve(queue.shift()!);
-      if (processExited) return Promise.resolve(null);
-      return new Promise((resolve) => {
-        wakeup = () => resolve(queue.length > 0 ? queue.shift()! : null);
+      rl.on('line', (line) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        try {
+          queue.push(JSON.parse(trimmed) as SDKMessage);
+          wakeup?.();
+          wakeup = null;
+        } catch {
+          self.logger.debug('Unparseable stream-json line', { line: trimmed });
+        }
       });
+
+      const exitPromise = new Promise<void>((resolve) => {
+        child.on('close', (code) => {
+          self.logger.debug('Claude process exited', { code });
+          processExited = true;
+          wakeup?.();
+          wakeup = null;
+          resolve();
+        });
+      });
+
+      child.stderr.on('data', (d: Buffer) => {
+        const text = d.toString();
+        stderrText += text;
+        const t = text.trim();
+        if (t) self.logger.debug('claude stderr', { text: t });
+      });
+
+      const timeoutId = setTimeout(() => {
+        self.logger.warn('Query timed out', { timeoutMs: QUERY_TIMEOUT_MS });
+        effectiveController.abort();
+      }, QUERY_TIMEOUT_MS);
+
+      const onAbort = () => child.kill();
+      effectiveController.signal.addEventListener('abort', onAbort, { once: true });
+
+      // Returns the next parsed message, or null when the process has exited and
+      // the queue is empty. Suspends when neither condition is true yet.
+      const nextMsg = (): Promise<SDKMessage | null> => {
+        if (queue.length > 0) return Promise.resolve(queue.shift()!);
+        if (processExited) return Promise.resolve(null);
+        return new Promise((resolve) => {
+          wakeup = () => resolve(queue.length > 0 ? queue.shift()! : null);
+        });
+      };
+
+      try {
+        let msg: SDKMessage | null;
+        while (!effectiveController.signal.aborted && (msg = await nextMsg()) !== null) {
+          if (msg.type === 'system' && msg.subtype === 'init') {
+            sawInit = true;
+            if (session) {
+              session.sessionId = (msg as { session_id: string }).session_id;
+              self.logger.info('Session initialized', { sessionId: session.sessionId });
+              self.saveSessions();
+            }
+          }
+          // A dead --resume errors out before any init or content — detect it (via the CLI's
+          // "No conversation found" on stderr, or an init-less error result), flag it, and
+          // suppress the phantom error so the caller can retry with a fresh session.
+          if (
+            useResume &&
+            !sawInit &&
+            msg.type === 'result' &&
+            (String((msg as { subtype: string }).subtype).startsWith('error') ||
+              /No conversation found with session ID/i.test(stderrText))
+          ) {
+            resumeFailed = true;
+            self.logger.warn('Resume failed (session not found); will retry with a fresh session', {
+              sessionId: session?.sessionId,
+            });
+            break;
+          }
+          yield msg;
+        }
+      } finally {
+        clearTimeout(timeoutId);
+        effectiveController.signal.removeEventListener('abort', onAbort);
+        rl.close();
+        child.kill();
+        await exitPromise;
+      }
     };
 
-    try {
-      let msg: SDKMessage | null;
-      while (!effectiveController.signal.aborted && (msg = await nextMsg()) !== null) {
-        if (msg.type === 'system' && msg.subtype === 'init') {
-          if (session) {
-            session.sessionId = msg.session_id;
-            this.logger.info('Session initialized', { sessionId: msg.session_id });
-            this.saveSessions();
-          }
-        }
-        yield msg;
+    yield* attempt(true);
+    if (usedResume && resumeFailed && !effectiveController.signal.aborted) {
+      if (session) {
+        session.sessionId = undefined; // drop the stale id so the retry starts (and saves) fresh
+        this.saveSessions();
       }
-    } finally {
-      clearTimeout(timeoutId);
-      rl.close();
-      child.kill();
-      await exitPromise;
+      yield* attempt(false);
     }
   }
 
