@@ -132,18 +132,41 @@ export class McpManager {
     return Object.keys(config.mcpServers).map(serverName => `mcp__${serverName}`);
   }
 
+  // The built-in MCP servers the bot wires into every interactive Slack session in code (see
+  // claude-handler.ts). These power the bot's own capabilities and are NOT listed in
+  // mcp-servers.json — without surfacing them here, `mcp` looks like nothing is configured.
+  private builtinServers(): { name: string; desc: string }[] {
+    const servers = [
+      { name: 'system-control', desc: 'run/list agents, workflows, jobs, schedules, projects' },
+      { name: 'slack-tools', desc: 'canvases, scheduled messages, reminders, SearchMessages/ReadChannelMessages' },
+      { name: 'permission-prompt', desc: 'tool-approval flow' },
+    ];
+    if (process.env.MEMORY_ENABLED === 'true') {
+      servers.push({ name: 'mempalace', desc: 'long-term memory (MEMORY_ENABLED)' });
+    }
+    if (process.env.SLACK_MCP_ENABLED === 'true') {
+      servers.push({ name: 'slack', desc: 'hosted Slack MCP (SLACK_MCP_ENABLED)' });
+    }
+    return servers;
+  }
+
   formatMcpInfo(): string {
-    const config = this.loadConfiguration();
-    if (!config || Object.keys(config.mcpServers).length === 0) {
-      return 'No MCP servers configured.';
+    let info = '🔧 *Built-in MCP servers* (always on, wired in code):\n';
+    for (const s of this.builtinServers()) {
+      info += `• \`${s.name}\` — ${s.desc}\n`;
     }
 
-    let info = '🔧 **MCP Servers Configured:**\n\n';
+    const config = this.loadConfiguration();
+    const external = config ? Object.entries(config.mcpServers) : [];
+    info += '\n*External MCP servers* (from `mcp-servers.json`):\n';
+    if (external.length === 0) {
+      info += '• _none configured_ — add servers to `mcp-servers.json`, then run `mcp reload`.\n';
+      return info.trimEnd();
+    }
 
-    for (const [serverName, serverConfig] of Object.entries(config.mcpServers)) {
+    for (const [serverName, serverConfig] of external) {
       const type = serverConfig.type || 'stdio';
-      info += `• **${serverName}** (${type})\n`;
-
+      info += `• *${serverName}* (${type})\n`;
       if (type === 'stdio') {
         const stdioConfig = serverConfig as McpStdioServerConfig;
         info += `  Command: \`${stdioConfig.command}\`\n`;
@@ -154,12 +177,9 @@ export class McpManager {
         const urlConfig = serverConfig as McpSSEServerConfig | McpHttpServerConfig;
         info += `  URL: \`${urlConfig.url}\`\n`;
       }
-      info += '\n';
     }
 
-    info += 'Available tools follow the pattern: `mcp__serverName__toolName`\n';
-    info += 'All MCP tools are allowed by default.';
-
+    info += '\nTools follow the pattern `mcp__serverName__toolName`; all are allowed by default.';
     return info;
   }
 
