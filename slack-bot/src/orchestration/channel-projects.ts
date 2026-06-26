@@ -139,7 +139,10 @@ export function isSalesforceId(v: string): boolean {
 
 // ── Auto-detecting a client name in free-text (DM convenience) ───────────────────────────────────
 // Reserved workspace names that are never "clients" and must not auto-scope.
-const RESERVED_PROJECTS = new Set(['general', 'admin', 'node_modules']);
+// Folders that are infrastructure, not client projects — never auto-recognized as a project.
+// 'system' and 'global' especially: words like "the system" / "global" appear constantly in normal
+// chat and would otherwise mis-scope.
+const RESERVED_PROJECTS = new Set(['general', 'admin', 'node_modules', 'global', 'system']);
 
 /** Known projects = channel-mapped names + workspace dirs that carry a project.json. */
 export function listKnownProjects(): Array<{ name: string; aliases: string[] }> {
@@ -150,7 +153,9 @@ export function listKnownProjects(): Array<{ name: string; aliases: string[] }> 
   try {
     for (const d of fs.readdirSync(BASE_DIRECTORY, { withFileTypes: true })) {
       if (!d.isDirectory() || d.name.startsWith('.') || RESERVED_PROJECTS.has(d.name)) continue;
-      if (fs.existsSync(path.join(BASE_DIRECTORY, d.name, 'project.json'))) names.add(d.name);
+      // Any workspace folder is a recognizable project — a project.json manifest is optional and
+      // only adds bindings (Salesforce/Drive) + extra aliases, not recognition itself.
+      names.add(d.name);
     }
   } catch { /* base dir missing — no projects */ }
   return [...names].map((name) => {

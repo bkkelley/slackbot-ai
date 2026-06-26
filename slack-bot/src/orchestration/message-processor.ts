@@ -5,7 +5,7 @@ import { ChannelTransport, ChannelFormatter, IncomingMessage } from './types';
 import { ClaudeHandler, SDKMessage } from '../claude-handler';
 import { McpManager } from './mcp-manager';
 import { SessionManager } from './session-manager';
-import { resolveProject, projectPreamble, sanitizeProject, detectProjectInText } from './channel-projects';
+import { resolveProject, projectPreamble, sanitizeProject, detectProjectInText, loadChannelProjects } from './channel-projects';
 import { memoryEnabled, recall, recallPreamble } from './memory';
 import { TodoManager, Todo } from './todo-manager';
 import { RateLimiter } from './rate-limiter';
@@ -52,7 +52,7 @@ export class MessageProcessor {
   private activeControllers: Map<string, AbortController> = new Map();
   private logger = new Logger('MessageProcessor');
   private sessionManager: SessionManager = new SessionManager();
-  private threadProjects: Map<string, string> = new Map(); // DM threadKey → project (via `project: X`)
+  private threadProjects: Map<string, string> = new Map(); // threadKey → project, for unmapped channels & DMs (via `project: X` or name detection)
   private todoManager: TodoManager = new TodoManager();
   private rateLimiter: RateLimiter = new RateLimiter(20, 60_000);
   private modelManager: ModelManager = new ModelManager();
@@ -215,7 +215,12 @@ export class MessageProcessor {
       promptText = onboardPrompt();
     }
 
-    if (!isOnboard && isDM && promptText) {
+    // Recognize the project in play. An explicit channel → project mapping always wins. Otherwise
+    // (unmapped channels and DMs alike) a leading `project: <name>` or a known project name in the
+    // text scopes this thread. Detection is conservative: it only switches when a *different* known
+    // project is clearly named, announces the switch, and never overrides an explicit mapping.
+    const channelMapped = Boolean(loadChannelProjects()[channelId]);
+    if (!isOnboard && promptText && !channelMapped) {
       const m = promptText.match(/^project:\s*(.+?)\s*(\n[\s\S]*)?$/i);
       if (m) {
         const proj = sanitizeProject(m[1]);
@@ -228,7 +233,7 @@ export class MessageProcessor {
           }
         }
       } else {
-        // No explicit `project:` prefix — auto-scope if a known client name is mentioned.
+        // No explicit `project:` prefix — auto-scope if a known project name is mentioned.
         // Whole-word match; switches (and announces) only when it differs from the current scope.
         const detected = detectProjectInText(promptText);
         if (detected && this.threadProjects.get(threadKey) !== detected) {
@@ -237,8 +242,8 @@ export class MessageProcessor {
         }
       }
     }
-    const dmThreadProject = isDM ? this.threadProjects.get(threadKey) : undefined;
-    const { dir: workingDirectory, project } = resolveProject(channelId, dmThreadProject);
+    const threadProject = this.threadProjects.get(threadKey);
+    const { dir: workingDirectory, project } = resolveProject(channelId, threadProject);
 
     // Session management via SessionManager (platform-scoped keys)
     const sessionKey = this.sessionManager.getSessionKey(msg.platform, channelId, threadId, messageId);
