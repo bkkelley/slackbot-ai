@@ -49,6 +49,20 @@ const TASKS_SYSTEM_PROMPT = [
   'and silently does nothing.',
 ].join(' ');
 
+// Slack data access. This system reads Slack ONLY through the local `slack-tools` MCP (SearchMessages /
+// ReadChannelMessages, backed by the user token). There is intentionally no hosted/claude.ai Slack MCP
+// connected. Without this guidance the model, asked about a channel, may look for a hosted Slack
+// integration and tell the user "the Slack MCP is not connected" — confusing, and wrong for this system.
+const SLACK_SYSTEM_PROMPT = [
+  'To read or search Slack — messages, channels, history, "what was said in #channel", "the latest on X" —',
+  'use the slack-tools MCP: `SearchMessages` to search across the workspace and `ReadChannelMessages` to',
+  'read a specific channel. These are the ONLY Slack data tools in this system and they work out of the box.',
+  'There is NO hosted or claude.ai Slack MCP, and you are not connected to one. Never attempt to call a',
+  '`mcp__slack__*` tool, never reference a "Slack MCP"/"claude.ai Slack" integration, and never tell the',
+  'user that a Slack MCP is "not connected" — just answer using slack-tools. If slack-tools itself returns',
+  'nothing, say no matching messages were found; do not blame missing connectivity.',
+].join(' ');
+
 // Local types matching `claude --output-format stream-json` NDJSON output.
 export type SDKMessage =
   | { type: 'system'; subtype: 'init'; session_id: string; [key: string]: unknown }
@@ -207,7 +221,11 @@ export class ClaudeHandler {
     }
 
     const mcpToolPrefixes = this.mcpManager.getDefaultAllowedTools();
-    if (slackContext) mcpToolPrefixes.push('mcp__permission-prompt', 'mcp__slack-tools', 'mcp__slack', 'mcp__system-control');
+    if (slackContext) mcpToolPrefixes.push('mcp__permission-prompt', 'mcp__slack-tools', 'mcp__system-control');
+    // Only advertise the hosted Slack MCP tool prefix when that server is actually wired (opt-in).
+    // Otherwise the model is told `mcp__slack__*` tools exist, finds no server, and reports the
+    // claude.ai Slack MCP as "not connected" — exactly the confusion we don't want.
+    if (slackContext && process.env.SLACK_MCP_ENABLED === 'true') mcpToolPrefixes.push('mcp__slack');
     if (slackContext && process.env.MEMORY_ENABLED === 'true') mcpToolPrefixes.push('mcp__mempalace');
     allowedTools.push(...mcpToolPrefixes);
 
@@ -229,7 +247,7 @@ export class ClaudeHandler {
     // Only the interactive Slack session has the system-control MCP (ListProjects). Teach it that
     // "my projects" = the system registry, so it doesn't fall back to sweeping GitHub/the filesystem.
     if (slackContext) {
-      baseArgs.push('--append-system-prompt', `${PROJECTS_SYSTEM_PROMPT}\n\n${AGENDA_SYSTEM_PROMPT}\n\n${TASKS_SYSTEM_PROMPT}`);
+      baseArgs.push('--append-system-prompt', `${PROJECTS_SYSTEM_PROMPT}\n\n${AGENDA_SYSTEM_PROMPT}\n\n${TASKS_SYSTEM_PROMPT}\n\n${SLACK_SYSTEM_PROMPT}`);
     }
 
     if (Object.keys(mcpServers).length > 0) {
