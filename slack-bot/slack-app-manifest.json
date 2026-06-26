@@ -1,19 +1,16 @@
 {
   "display_information": {
-    "name": "Claude Code Bot",
-    "description": "AI-powered coding assistant using Claude Code SDK",
-    "background_color": "#4A154B",
-    "long_description": "This bot integrates Claude Code SDK with Slack to provide AI-powered coding assistance directly in your workspace. It supports streaming responses, maintains conversation context, and can help with code reviews, debugging, and general programming questions."
+    "name": "mycrew",
+    "description": "AI assistant - Claude Code in Slack"
   },
   "features": {
-    "app_home": {
-      "home_tab_enabled": false,
-      "messages_tab_enabled": true,
-      "messages_tab_read_only_enabled": false
-    },
     "bot_user": {
-      "display_name": "Claude Code",
+      "display_name": "mycrew",
       "always_online": true
+    },
+    "app_home": {
+      "home_tab_enabled": true,
+      "messages_tab_enabled": false
     },
     "slash_commands": [
       {
@@ -27,15 +24,29 @@
     "scopes": {
       "bot": [
         "app_mentions:read",
-        "channels:history",
         "chat:write",
         "chat:write.public",
+        "channels:history",
+        "channels:read",
+        "groups:history",
+        "groups:read",
         "im:history",
         "im:read",
         "im:write",
         "users:read",
         "reactions:read",
-        "reactions:write"
+        "reactions:write",
+        "canvases:read",
+        "canvases:write",
+        "reminders:read",
+        "reminders:write",
+        "lists:read",
+        "lists:write",
+        "files:read",
+        "files:write",
+        "links:read",
+        "pins:read",
+        "pins:write"
       ],
       "user": [
         "search:read",
@@ -54,11 +65,13 @@
       "bot_events": [
         "app_mention",
         "message.im",
-        "member_joined_channel"
+        "member_joined_channel",
+        "channel_created",
+        "app_home_opened"
       ]
     },
     "interactivity": {
-      "is_enabled": false
+      "is_enabled": true
     },
     "org_deploy_enabled": false,
     "socket_mode_enabled": true,
